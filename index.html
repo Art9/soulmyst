@@ -1,0 +1,91 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Soul Myst</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+html,body{margin:0;background:#f8f4ea;color:#1f2a4a;font-family:"DejaVu Sans",Roboto,Arial,sans-serif;-webkit-user-select:none;user-select:none}
+#wrap{max-width:720px;margin:0 auto;padding:8px 8px 16px}
+h1{font-family:Georgia,"DejaVu Serif",serif;font-size:20px;text-align:center;margin:6px 0 2px}
+#date{text-align:center;font-size:18px;color:#7a7468;margin-bottom:4px}
+#hint{text-align:center;font-size:13px;color:#7a7468;margin:2px 0 6px}
+svg{width:100%;height:auto;display:block;touch-action:none}
+.nav{display:flex;justify-content:space-between;margin:6px 0}
+.nav button{font-size:16px;padding:8px 14px;border:1px solid #a8863a;background:#fffaf0;color:#1f2a4a;border-radius:8px}
+.row{display:flex;align-items:center;margin:9px 0;font-size:18px}
+.dot{width:16px;height:16px;border-radius:50%;margin-right:8px;flex:none}
+.nm{flex:1;min-width:0}.nm small{color:#7a7468;font-size:14px}
+.pc{width:64px;text-align:right;font-weight:bold}
+.ar{width:26px;text-align:center;font-weight:bold}
+.bar{width:28%;height:14px;background:#e6dcc3;border-radius:7px;overflow:hidden;margin-left:6px;flex:none}
+.bar i{display:block;height:100%;border-radius:7px}
+.note{text-align:center;color:#7a7468;font-size:13px;margin-top:8px}
+</style></head><body><div id="wrap">
+<h1 id="h"></h1><div id="date"></div><div id="hint"></div>
+<svg id="c" viewBox="0 0 1080 1180"></svg>
+<div class="nav"><button id="pv">◀ 7</button><button id="td"></button><button id="nx">7 ▶</button></div>
+<div id="leg"></div><div class="note" id="note"></div>
+</div>
+<script>
+const P=[23.6884,28.426125,33.163812,37.901499,42.6392,47.3769,52.1146];
+const COL=['#c62828','#e67e00','#c9a000','#2e8b57','#1e88c8','#1f3c9e','#8e3fc0'];
+const T={ru:{h:'Ежедневная активность чакр',hint:'Ведите пальцем по графику, чтобы выбрать день',today:'Сегодня',note:'Столбики — тонус дня. ⚠ — критический день',
+ n:[['Физический','Муладхара'],['Эмоциональный','Свадхистана'],['Интеллектуальный','Манипура'],['Сердечный','Анахата'],['Творческий','Вишуддха'],['Интуитивный','Аджна'],['Духовный','Сахасрара']],
+ wd:['вс','пн','вт','ср','чт','пт','сб'],mon:['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'],fd:(d,m,y)=>d+' '+m+' '+y},
+en:{h:'Daily chakra activity',hint:'Slide your finger across the chart to choose a day',today:'Today',note:'Bars — tone of the day. ⚠ — critical day',
+ n:[['Physical','Muladhara'],['Emotional','Svadhisthana'],['Intellectual','Manipura'],['Heart','Anahata'],['Creative','Vishuddha'],['Intuitive','Ajna'],['Spiritual','Sahasrara']],
+ wd:['Su','Mo','Tu','We','Th','Fr','Sa'],mon:['January','February','March','April','May','June','July','August','September','October','November','December'],fd:(d,m,y)=>m+' '+d+', '+y},
+es:{h:'Actividad diaria de los chakras',hint:'Desliza el dedo por el gráfico para elegir un día',today:'Hoy',note:'Barras — tono del día. ⚠ — día crítico',
+ n:[['Físico','Muladhara'],['Emocional','Svadhisthana'],['Intelectual','Manipura'],['Del corazón','Anahata'],['Creativo','Vishuddha'],['Intuitivo','Ajna'],['Espiritual','Sahasrara']],
+ wd:['do','lu','ma','mi','ju','vi','sá'],mon:['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'],fd:(d,m,y)=>d+' de '+m+' de '+y},
+pt:{h:'Atividade diária dos chakras',hint:'Deslize o dedo pelo gráfico para escolher um dia',today:'Hoje',note:'Barras — tônus do dia. ⚠ — dia crítico',
+ n:[['Físico','Muladhara'],['Emocional','Svadhisthana'],['Intelectual','Manipura'],['Do coração','Anahata'],['Criativo','Vishuddha'],['Intuitivo','Ajna'],['Espiritual','Sahasrara']],
+ wd:['dom','seg','ter','qua','qui','sex','sáb'],mon:['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'],fd:(d,m,y)=>d+' de '+m+' de '+y}};
+const q=new URLSearchParams(location.hash.slice(1));
+const X=T[q.get('l')]||T.ru;
+const pd=s=>{const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(s||'');return m?Date.UTC(+m[1],m[2]-1,+m[3]):null};
+const birth=pd(q.get('b')), today=pd(q.get('d'))||Date.UTC(new Date().getFullYear(),new Date().getMonth(),new Date().getDate());
+const DAY=864e5, BEFORE=10, N=21, W=1080, L=84, R=1064, TT=20, B=1060, CW=(R-L)/N, MID=(TT+B)/2, AMP=(B-TT)/2-12;
+let center=0, sel=0;           // center = window centre offset from today; sel = selected offset from today
+const val=(t,p)=>Math.sin(2*Math.PI*t/p);
+const crit=(t,p)=>{const h=p/2,r=((t%h)+h)%h;return Math.min(r,h-r)<=0.5};
+const t0=birth==null?0:(today-birth)/DAY;
+const x=d=>L+(d-center+BEFORE+0.5)*CW, y=v=>MID-v*AMP;
+const el=id=>document.getElementById(id);
+el('h').textContent=X.h; el('hint').textContent=X.hint; el('note').textContent=X.note; el('td').textContent=X.today;
+function draw(){
+  let s='<rect width="1080" height="1180" fill="#f8f4ea"/>';
+  const sx=L+(sel-center+BEFORE)*CW, GW=CW*0.7;
+  s+=`<defs><linearGradient id="gl"><stop offset="0" stop-color="#c9b98f" stop-opacity="0"/><stop offset="1" stop-color="#c9b98f" stop-opacity=".55"/></linearGradient><linearGradient id="gr"><stop offset="0" stop-color="#c9b98f" stop-opacity=".55"/><stop offset="1" stop-color="#c9b98f" stop-opacity="0"/></linearGradient></defs>`;
+  s+=`<rect x="${sx-GW}" y="${TT}" width="${GW}" height="${B-TT+80}" fill="url(#gl)"/><rect x="${sx+CW}" y="${TT}" width="${GW}" height="${B-TT+80}" fill="url(#gr)"/><rect x="${sx}" y="${TT}" width="${CW}" height="${B-TT+80}" fill="#cdbd94" opacity=".85"/>`;
+  for(const pc of [0,25,50,75,100]){const yy=y(pc/50-1); if(pc!==50) s+=`<line x1="${L}" y1="${yy}" x2="${R}" y2="${yy}" stroke="#b9ad8f" stroke-dasharray="6 8" opacity=".7"/>`; s+=`<text x="${L-8}" y="${yy+9}" font-size="25" fill="#7a7468" text-anchor="end">${pc}%</text>`;}
+  for(let i=0;i<N;i++){
+    const d=center-BEFORE+i, dt=new Date(today+d*DAY), cx=L+(i+.5)*CW, sun=dt.getUTCDay()===0, isT=d===0, isS=d===sel;
+    if(i) s+=`<line x1="${L+i*CW}" y1="${TT}" x2="${L+i*CW}" y2="${B+80}" stroke="#d9cfb6" opacity=".8"/>`;
+    const c=sun?'#a23b22':(isS||isT)?'#1f2a4a':'#7a7468', fw=(isS||isT)?'bold':'normal';
+    s+=`<text x="${cx}" y="${B+38}" fill="${c}" font-size="31" font-weight="${fw}" text-anchor="middle"${isT?' text-decoration="underline"':''}>${dt.getUTCDate()}</text>`;
+    s+=`<text x="${cx}" y="${B+70}" fill="${c}" font-size="${X.wd[0].length>2?21:24}" font-weight="${fw}" text-anchor="middle">${X.wd[dt.getUTCDay()]}</text>`;
+    const avg=P.reduce((a,p)=>a+val(t0+d,p),0)/P.length, h=Math.abs(avg)*AMP;
+    s+=`<rect x="${L+i*CW+3}" y="${avg>=0?MID-h:MID}" width="${CW-6}" height="${h}" fill="${avg>=0?'#2e8b57':'#c9573d'}" opacity=".55"/>`;
+  }
+  s+=`<line x1="${L}" y1="${MID}" x2="${R}" y2="${MID}" stroke="#a8863a" stroke-width="2"/>`;
+  P.forEach((p,k)=>{const pts=[];for(let d=center-BEFORE-.5;d<=center-BEFORE+N-.5+1e-9;d+=.125)pts.push(x(d).toFixed(1)+','+y(val(t0+d,p)).toFixed(1));
+    s+=`<polyline points="${pts.join(' ')}" fill="none" stroke="${COL[k]}" stroke-width="6.5" stroke-linejoin="round"/>`;
+    const v=val(t0+sel,p); s+=`<circle cx="${x(sel)}" cy="${y(v)}" r="10" fill="${COL[k]}" stroke="#fff" stroke-width="3"/>`;});
+  s+=`<rect x="${L}" y="${TT}" width="${R-L}" height="${B-TT+80}" fill="none" stroke="#a8863a" stroke-width="1.5" rx="4"/>`;
+  el('c').innerHTML=s;
+  const dt=new Date(today+sel*DAY); el('date').textContent=X.fd(dt.getUTCDate(),X.mon[dt.getUTCMonth()],dt.getUTCFullYear())+' · '+X.wd[dt.getUTCDay()];
+  el('leg').innerHTML=P.map((p,k)=>{const v=val(t0+sel,p),pc=Math.round((v+1)*50),up=val(t0+sel+1,p)>v,cr=crit(t0+sel,p);
+    return `<div class="row"><span class="dot" style="background:${COL[k]}"></span><span class="nm">${X.n[k][0]} <small>(${X.n[k][1]})</small></span><span class="pc">${pc}%</span><span class="ar" style="color:${up?'#2e8b57':'#c62828'}">${up?'▲':'▼'}</span><span class="ar" style="color:#c27a00">${cr?'⚠':''}</span><span class="bar"><i style="width:${Math.max(4,pc)}%;background:${COL[k]}"></i></span></div>`}).join('');
+}
+const svg=el('c');
+function pick(ev){const r=svg.getBoundingClientRect(),px=(ev.clientX-r.left)/r.width*W,i=Math.max(0,Math.min(N-1,Math.floor((px-L)/CW))),ns=center-BEFORE+i;
+  if(ns!==sel){sel=ns;draw();try{Telegram.WebApp.HapticFeedback.selectionChanged()}catch(e){}}}
+let down=false;
+svg.addEventListener('pointerdown',e=>{down=true;svg.setPointerCapture(e.pointerId);pick(e)});
+svg.addEventListener('pointermove',e=>{if(down)pick(e)});
+svg.addEventListener('pointerup',()=>down=false);svg.addEventListener('pointercancel',()=>down=false);
+el('pv').onclick=()=>{center-=7;sel-=7;draw()};el('nx').onclick=()=>{center+=7;sel+=7;draw()};el('td').onclick=()=>{center=0;sel=0;draw()};
+try{Telegram.WebApp.ready();Telegram.WebApp.expand();Telegram.WebApp.setHeaderColor('#f8f4ea');Telegram.WebApp.setBackgroundColor('#f8f4ea')}catch(e){}
+draw();
+</script></body></html>
