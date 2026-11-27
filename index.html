@@ -224,7 +224,10 @@ const LU={ru:{h1:'1. Лунный день',h2:'2. Ваши биоритмы',fr
 LU.es={...LU.en,h1:'1. Día lunar',h2:'2. Tus biorritmos',from:'desde',to:'hasta',next:(n,nm,t)=>`Desde las ${t} comienza el <b>día lunar ${n} — ${nm}</b>.`,wax:'Shukla paksha (luna creciente)',wane:'Krishna paksha (luna menguante)',ld:n=>`Día lunar ${n}`,moon:(il,sg,nk)=>`Luna ${il}%, en ${sg}, nakshatra ${nk}.`,menu:'◂ Menú principal',bd:'✏️ Cambiar fecha'};
 LU.pt={...LU.en,h1:'1. Dia lunar',h2:'2. Seus biorritmos',from:'de',to:'até',next:(n,nm,t)=>`A partir das ${t} começa o <b>dia lunar ${n} — ${nm}</b>.`,wax:'Shukla paksha (lua crescente)',wane:'Krishna paksha (lua minguante)',ld:n=>`Dia lunar ${n}`,moon:(il,sg,nk)=>`Lua ${il}%, em ${sg}, nakshatra ${nk}.`,menu:'◂ Menu principal',bd:'✏️ Mudar data'};
 const LX=LU[LG]||LU.en;
-const tName=n=>n===30?LX.names[15]:LX.names[(n-1)%15];
+// Sanskrit tithi names are just ordinals inside the lunar fortnight — show the meaning next to them
+const TMEAN={ru:(k,w)=>`${k}-й день ${w?'растущей':'убывающей'} Луны`,en:(k,w)=>`day ${k} of the ${w?'waxing':'waning'} Moon`,es:(k,w)=>`${k}.º día de la luna ${w?'creciente':'menguante'}`,pt:(k,w)=>`${k}.º dia da lua ${w?'crescente':'minguante'}`}[q.get('l')]||((k,w)=>`${k}-й день ${w?'растущей':'убывающей'} Луны`);
+const TFULL={ru:['полнолуние','новолуние'],en:['full moon','new moon'],es:['luna llena','luna nueva'],pt:['lua cheia','lua nova']}[q.get('l')]||['полнолуние','новолуние'];
+const tSk=n=>n===30?LX.names[15]:LX.names[(n-1)%15], tMean=n=>n===15?TFULL[0]:n===30?TFULL[1]:TMEAN((n-1)%15+1,n<15), tName=n=>tSk(n)+' ('+tMean(n)+')';
 const tDesc=n=>{const k=(n-1)%15+1;return (LX.sp[n]?LX.sp[n]+' ':'')+(n===30?'':LX.g[(k-1)%5]);};
 const hm=d=>d.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',hour12:false});
 const dm=d=>d.getDate()+' '+X.mon[d.getMonth()];
@@ -238,7 +241,7 @@ function lunarHtml(dd){ if(!AS) return '';
   let sr=null;try{sr=OBS&&AS.SearchRiseSet(AS.Body.Sun,OBS,+1,d0,1)}catch(e){} const base=sr?sr.date:d0;   // the day's lunar day = the one current at local sunrise (Panchang rule)
   const n=Math.floor(AS.MoonPhase(base)/12)+1, st=AS.SearchMoonPhase(((n-1)*12)%360,new Date(base.getTime()-1.3*DAY),1.4), en=AS.SearchMoonPhase((n*12)%360,base,1.4);
   const fmt=x=>x?(x.date.toDateString()===d0.toDateString()?hm(x.date):dm(x.date)+' '+hm(x.date)):'?';
-  let h=`<h3>${LX.h1}</h3><b>${LX.ld(n)} — ${tName(n)}</b> <span style="color:#7a7468">(${LX.from} ${fmt(st)} ${LX.to} ${fmt(en)})</span>${sr?` <span style="color:#7a7468;font-size:13px">· ${SRL} ≈${hm(sr.date)}</span>`:''}<br>`;
+  let h=`<h3>${LX.h1}</h3><b>${LX.ld(n)} — ${tSk(n)}</b> (${tMean(n)})<br><span style="color:#7a7468;font-size:14px">${LX.from} ${fmt(st)} ${LX.to} ${fmt(en)}${sr?` · ${SRL} ≈${hm(sr.date)}`:''}</span><br>`;
   h+=`<span style="color:#7a7468">${n<=15?LX.wax:LX.wane}</span><div style="margin-top:4px">${tDesc(n)}</div>`;
   let cur=en; for(let i=0;i<2&&cur&&cur.date<d1;i++){const m=n+i+1>30?n+i+1-30:n+i+1;h+=`<div style="margin-top:8px">🌙 ${LX.next(m,tName(m),hm(cur.date))}<br>${tDesc(m)}</div>`;cur=AS.SearchMoonPhase((m*12)%360,cur.date,1.4);}
   const noon=new Date(d0.getTime()+DAY/2), tt=AS.MakeTime(noon).tt, ay=23.85306+50.2875*(tt/36525)*100/3600, ml=((AS.Ecliptic(AS.GeoVector(AS.Body.Moon,noon,true)).elon-ay)%360+360)%360;
