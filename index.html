@@ -260,10 +260,10 @@ svg.addEventListener('pointerdown',e=>{down=true;svg.setPointerCapture(e.pointer
 svg.addEventListener('pointermove',e=>{if(down)pick(e)});
 svg.addEventListener('pointerup',()=>down=false);svg.addEventListener('pointercancel',()=>down=false);
 el('pv').onclick=()=>{center-=7;sel-=7;draw()};el('nx').onclick=()=>{center+=7;sel+=7;draw()};el('td').onclick=()=>{center=0;sel=0;PIN=false;draw()};
-// ---- jump to any date (personal chart only): from the birth date (but not before 15.10.1582) to 31.12.2100 ----
-if(!GROUP){ const GT={ru:['Показать','Введите дату: ДД.ММ.ГГГГ','Такой даты нет','Это раньше даты рождения ','Дата не может быть позже 31.12.2100','📌 выбранная дата'],en:['Show','Enter a date: DD.MM.YYYY','No such date','This is before the date of birth ','The date cannot be later than 31.12.2100','📌 chosen date'],es:['Mostrar','Escribe una fecha: DD.MM.AAAA','Esa fecha no existe','Es anterior a la fecha de nacimiento ','La fecha no puede ser posterior al 31.12.2100','📌 fecha elegida'],pt:['Mostrar','Digite uma data: DD.MM.AAAA','Essa data não existe','É anterior à data de nascimento ','A data não pode ser posterior a 31.12.2100','📌 data escolhida']}[q.get('l')]||0;
+// ---- jump to any date: from the birth date (circle: the youngest member's) but not before 15.10.1582, up to 31.12.2100 ----
+{ const GT={ru:['Показать','Введите дату: ДД.ММ.ГГГГ','Такой даты нет','Это раньше даты рождения ','Дата не может быть позже 31.12.2100','📌 выбранная дата'],en:['Show','Enter a date: DD.MM.YYYY','No such date','This is before the date of birth ','The date cannot be later than 31.12.2100','📌 chosen date'],es:['Mostrar','Escribe una fecha: DD.MM.AAAA','Esa fecha no existe','Es anterior a la fecha de nacimiento ','La fecha no puede ser posterior al 31.12.2100','📌 fecha elegida'],pt:['Mostrar','Digite uma data: DD.MM.AAAA','Essa data não existe','É anterior à data de nascimento ','A data não pode ser posterior a 31.12.2100','📌 data escolhida']}[q.get('l')]||0;
   const G=GT||['Показать','Введите дату: ДД.ММ.ГГГГ','Такой даты нет','Это раньше даты рождения ','Дата не может быть позже 31.12.2100','📌 выбранная дата'];
-  const bt=pd(q.get('b')), LO=Math.max(bt??-Infinity,Date.UTC(1582,9,15)), HI=Date.UTC(2100,11,31), iso=t=>new Date(t).toISOString().slice(0,10), dmy=t=>iso(t).split('-').reverse().join('.');
+  const yg=GROUP?members.reduce((a,m)=>m.t0<a.t0?m:a):null, bt=GROUP?today-yg.t0*DAY:pd(q.get('b')), LO=Math.max(bt??-Infinity,Date.UTC(1582,9,15)), HI=Date.UTC(2100,11,31), iso=t=>new Date(t).toISOString().slice(0,10), dmy=t=>iso(t).split('-').reverse().join('.');
   const dE=el('date'), box=el('goto'), inp=el('gin'), err=el('gerr'), cal=el('gdt');
   dE.classList.add('go'); el('gok').textContent=G[0]; inp.placeholder=G[1].split(': ')[1]||'ДД.ММ.ГГГГ'; cal.min=iso(LO); cal.max=iso(HI);
   const cur=()=>today+sel*DAY;
@@ -272,7 +272,7 @@ if(!GROUP){ const GT={ru:['Показать','Введите дату: ДД.ММ
   const go=t=>{const off=Math.round((t-today)/DAY);center=off;sel=off;PIN=off!==0;box.style.display='none';err.textContent='';try{inp.blur()}catch(e){}draw();window.scrollTo(0,0)};
   const submit=()=>{const m=/^(\d{2})\.(\d{2})\.(\d{4})$/.exec(inp.value);if(!m){err.textContent=G[1];return}
     const t=Date.UTC(+m[3],m[2]-1,+m[1]),d=new Date(t);if(d.getUTCDate()!==+m[1]||d.getUTCMonth()!==m[2]-1){err.textContent=G[2];return}
-    if(t<LO){err.textContent=bt!=null&&bt>=Date.UTC(1582,9,15)?G[3]+'('+dmy(bt)+')':G[3];return} if(t>HI){err.textContent=G[4];return} go(t)};
+    if(t<LO){err.textContent=bt!=null&&bt>=Date.UTC(1582,9,15)?G[3]+'('+dmy(bt)+(GROUP?', '+yg.n:'')+')':G[3];return} if(t>HI){err.textContent=G[4];return} go(t)};
   el('gok').onclick=submit; inp.addEventListener('keydown',e=>{if(e.key==='Enter')submit()});
   el('gcal').onclick=()=>{cal.value=iso(Math.min(Math.max(cur(),LO),HI));try{cal.showPicker()}catch(e){cal.style.pointerEvents='auto';cal.focus();cal.click()}};
   cal.addEventListener('change',()=>{if(!cal.value)return;const t=pd(cal.value);if(t==null)return;if(t<LO||t>HI){inp.value=dmy(t);submit();return}inp.value=dmy(t);go(t)});
