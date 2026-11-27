@@ -234,7 +234,7 @@ function bioHtml(dd){ const st=P.map(p=>rSt(t0+dd,p)), avg=P.reduce((a,p)=>a+val
   return strip(h); }
 function dayCards(){ const ok=!GROUP&&DL; el('lun').style.display=ok&&AS?'':'none'; el('bio').style.display=ok?'':'none'; if(!ok) return;
   try{el('lun').innerHTML=lunarHtml(sel);}catch(e){el('lun').style.display='none';} el('bio').innerHTML=bioHtml(sel); }
-{ const bn=q.get('bn')||'SoulMystBot', go=p=>{try{Telegram.WebApp.openTelegramLink(`https://t.me/${bn}?start=${p}`);setTimeout(()=>Telegram.WebApp.close(),300)}catch(e){location.href=`https://t.me/${bn}?start=${p}`}};
+{ const bn=q.get('bn')||'SoulMystBot', go=p=>{try{const W=Telegram.WebApp;W.openTelegramLink(`https://t.me/${bn}?start=${p}`);W.close();setTimeout(()=>W.close(),50)}catch(e){location.href=`https://t.me/${bn}?start=${p}`}};
   el('bb').innerHTML=`<button id="bm">${LX.menu}</button>`+(GROUP?'':`<button id="bd">${LX.bd}</button>`);
   el('bm').onclick=()=>go('menu'); if(!GROUP) el('bd').onclick=()=>go('setbirth'); }
 const svg=el('c');
