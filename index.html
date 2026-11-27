@@ -9,6 +9,8 @@ html,body{margin:0;background:#f8f4ea;color:#1f2a4a;font-family:"DejaVu Sans",Ro
 #wrap{max-width:720px;margin:0 auto;padding:8px 8px 16px}
 h1{font-family:Georgia,"DejaVu Serif",serif;font-size:20px;text-align:center;margin:6px 0 2px}
 #date{text-align:center;font-size:18px;color:#7a7468;margin-bottom:4px}
+#who{text-align:center;font-size:16px;font-weight:bold;color:#1f2a4a;margin:0 0 4px}
+#old{display:none;position:sticky;top:0;z-index:9;background:#fff1d6;border:1px solid #c9822b;border-radius:10px;padding:10px 12px;margin:0 0 8px;font-size:15px;text-align:center;line-height:1.4}#old button{margin-top:6px;font-size:15px;padding:7px 14px;border:0;border-radius:8px;background:#1f2a4a;color:#fff}
 #hint{text-align:center;font-size:13px;color:#7a7468;margin:2px 0 6px}
 #tabs{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:4px 0 8px}
 #tabs button{font-size:14px;padding:6px 10px;border:1px solid #a8863a;background:#fffaf0;color:#1f2a4a;border-radius:14px}
@@ -27,7 +29,7 @@ svg{width:100%;height:auto;display:block;touch-action:none}
 .card{background:#fffaf0;border:1px solid #e0d3b0;border-radius:10px;padding:10px 12px;margin:10px 0;font-size:15px;line-height:1.45}.card h3{margin:0 0 6px;font-size:17px;font-family:Georgia,"DejaVu Serif",serif}.rt{font-size:14px;color:#4a4030;margin-top:4px;line-height:1.4}
 .note{text-align:center;color:#7a7468;font-size:13px;margin-top:8px}
 </style></head><body><div id="wrap">
-<h1 id="h"></h1><div id="date"></div><div id="tabs"></div><div id="hint"></div>
+<div id="old"></div><h1 id="h"></h1><div id="who"></div><div id="date"></div><div id="tabs"></div><div id="hint"></div>
 <svg id="c" viewBox="0 0 1080 1215"></svg>
 <div class="nav"><button id="pv">◀ 7</button><button id="td"></button><button id="nx">7 ▶</button></div>
 <div class="card" id="lun"></div><div class="card" id="bio"></div><div id="leg"></div><div class="sum" id="sum"></div><div class="note" id="note"></div><div class="nav" id="bb"></div>
@@ -98,7 +100,18 @@ function series(){
     crit:tab<0?d=>P.filter(p=>crit(m.t0+d,p)).length:d=>crit(m.t0+d,P[tab])}));
 }
 const x=d=>L+(d-center+BEFORE+0.5)*CW, y=v=>MID-v*AMP, el=id=>document.getElementById(id);
-el('h').textContent=GROUP?X.hg:X.h; el('hint').textContent=X.hint; el('note').textContent=X.note; el('td').textContent=X.today;
+el('h').textContent=GROUP?X.hg:X.h;
+// whose chart: name + birth date under the title (the minimized-window title is the bot name and can't be changed)
+if(!GROUP&&q.get('b')){const b=q.get('b').split('-').reverse().join('.'),n=(q.get('n')||'').trim();el('who').textContent=(n?'👤 '+n+' · ':'🎂 ')+b;}
+// stale-window check: the newest window (largest v) records itself in Telegram CloudStorage; older windows show a banner
+if(!GROUP){const OLD={ru:['⚠️ Дата изменена — это старый график','Открыть актуальный'],en:['⚠️ The date was changed — this chart is outdated','Open the current one'],es:['⚠️ La fecha cambió: este gráfico es antiguo','Abrir el actual'],pt:['⚠️ A data foi alterada — este gráfico é antigo','Abrir o atual']}[q.get('l')]||0;
+  const myV=+q.get('v')||0, CS=(()=>{try{const c=Telegram.WebApp.CloudStorage;return Telegram.WebApp.initData&&c?c:null}catch(e){return null}})();
+  const check=()=>{if(!CS)return;try{CS.getItem('soulcur',(e,v)=>{if(e)return;let c=null;try{c=JSON.parse(v||'null')}catch(_){}
+    if(!c||myV>(+c.v||0)){if(myV)CS.setItem('soulcur',JSON.stringify({v:myV,h:location.hash.slice(1)}),()=>{});return}
+    if(myV<+c.v&&c.h&&c.h!==location.hash.slice(1)){const o=el('old'),t=OLD||['⚠️ Дата изменена — это старый график','Открыть актуальный'];
+      o.innerHTML='';o.append(document.createTextNode(t[0]),document.createElement('br'));const btn=document.createElement('button');btn.textContent=t[1];
+      btn.onclick=()=>{location.replace(location.pathname+'#'+c.h);location.reload()};o.append(btn);o.style.display='block';window.scrollTo(0,0)}})}catch(e){}};
+  check();try{Telegram.WebApp.onEvent('activated',check)}catch(e){}document.addEventListener('visibilitychange',()=>{if(!document.hidden)check()});} el('hint').textContent=X.hint; el('note').textContent=X.note; el('td').textContent=X.today;
 function tabs(){ if(!GROUP) return; const names=[X.every,X.all,...X.n.map(a=>a[0])];
   el('tabs').innerHTML=names.map((n,i)=>`<button data-t="${i-2}" class="${i-2===tab?'on':''}">${n}</button>`).join('');
   el('tabs').querySelectorAll('button').forEach(b=>b.onclick=()=>{tab=+b.dataset.t;tabs();draw()}); }
