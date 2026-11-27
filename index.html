@@ -291,7 +291,7 @@ el('pv').onclick=()=>{center-=7;sel-=7;draw()};el('nx').onclick=()=>{center+=7;s
     const t=TZT||['🕗 Утренний прогноз сейчас приходит в 8:00 по времени «'+ut+'». У вашего телефона другой часовой пояс: '+ptz+'.','Присылать в 8:00 по моему времени'];
     const b=el('tzb'),btn=document.createElement('button');b.append(document.createTextNode(t[0]),document.createElement('br'));btn.textContent=t[1];
     btn.style.cssText='margin-top:8px;font-size:15px;padding:7px 14px;border:0;border-radius:8px;background:#1f2a4a;color:#fff';
-    btn.onclick=()=>{const bn=q.get('bn')||'SoulMystBot';try{const W=Telegram.WebApp;if(W.initData&&!W.initDataUnsafe.query_id){W.sendData('tz|'+ptz);return}W.openTelegramLink(`https://t.me/${bn}?start=tz-${ptz.replace(/\//g,'__')}`)}catch(e){location.href=`https://t.me/${bn}?start=tz-${ptz.replace(/\//g,'__')}`}};
+    btn.onclick=()=>{const bn=q.get('bn')||'SoulMystBot';try{const W=Telegram.WebApp;if(W.initData&&!W.initDataUnsafe.query_id){W.sendData('tz|'+ptz);return}W.openTelegramLink(`https://t.me/${bn}?start=tz-${btoa(ptz).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}`)}catch(e){location.href=`https://t.me/${bn}?start=tz-${btoa(ptz).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}`}};
     b.append(btn);b.style.display='block';}}
 try{Telegram.WebApp.ready();Telegram.WebApp.expand();Telegram.WebApp.setHeaderColor('#f8f4ea');Telegram.WebApp.setBackgroundColor('#f8f4ea')}catch(e){}
 if(!GROUP) tab=-1;   // personal chart: never the circle table view
