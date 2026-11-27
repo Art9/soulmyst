@@ -9,52 +9,85 @@ html,body{margin:0;background:#f8f4ea;color:#1f2a4a;font-family:"DejaVu Sans",Ro
 h1{font-family:Georgia,"DejaVu Serif",serif;font-size:20px;text-align:center;margin:6px 0 2px}
 #date{text-align:center;font-size:18px;color:#7a7468;margin-bottom:4px}
 #hint{text-align:center;font-size:13px;color:#7a7468;margin:2px 0 6px}
+#tabs{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:4px 0 8px}
+#tabs button{font-size:14px;padding:6px 10px;border:1px solid #a8863a;background:#fffaf0;color:#1f2a4a;border-radius:14px}
+#tabs button.on{background:#1f2a4a;color:#fff}
 svg{width:100%;height:auto;display:block;touch-action:none}
 .nav{display:flex;justify-content:space-between;margin:6px 0}
 .nav button{font-size:16px;padding:8px 14px;border:1px solid #a8863a;background:#fffaf0;color:#1f2a4a;border-radius:8px}
 .row{display:flex;align-items:center;margin:9px 0;font-size:18px}
 .dot{width:16px;height:16px;border-radius:50%;margin-right:8px;flex:none}
-.nm{flex:1;min-width:0}.nm small{color:#7a7468;font-size:14px}
+.nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.nm small{color:#7a7468;font-size:14px}
 .pc{width:64px;text-align:right;font-weight:bold}
 .ar{width:26px;text-align:center;font-weight:bold}
 .bar{width:28%;height:14px;background:#e6dcc3;border-radius:7px;overflow:hidden;margin-left:6px;flex:none}
 .bar i{display:block;height:100%;border-radius:7px}
+.sum{text-align:center;font-size:16px;margin:10px 0 2px}
 .note{text-align:center;color:#7a7468;font-size:13px;margin-top:8px}
 </style></head><body><div id="wrap">
-<h1 id="h"></h1><div id="date"></div><div id="hint"></div>
+<h1 id="h"></h1><div id="date"></div><div id="tabs"></div><div id="hint"></div>
 <svg id="c" viewBox="0 0 1080 1180"></svg>
 <div class="nav"><button id="pv">◀ 7</button><button id="td"></button><button id="nx">7 ▶</button></div>
-<div id="leg"></div><div class="note" id="note"></div>
+<div id="leg"></div><div class="sum" id="sum"></div><div class="note" id="note"></div>
 </div>
 <script>
 const P=[23.6884,28.426125,33.163812,37.901499,42.6392,47.3769,52.1146];
 const COL=['#c62828','#e67e00','#c9a000','#2e8b57','#1e88c8','#1f3c9e','#8e3fc0'];
-const T={ru:{h:'Ежедневная активность чакр',hint:'Ведите пальцем по графику, чтобы выбрать день',today:'Сегодня',note:'Столбики — тонус дня. ⚠ — критический день',
+const MCOL=['#c62828','#1e88c8','#2e8b57','#8e3fc0','#e67e00','#1f3c9e','#c9a000','#d81b60','#00897b','#6d4c41','#5e35b1','#7cb342'];
+const T={ru:{h:'Ежедневная активность чакр',hg:'Биоритмы круга',hint:'Ведите пальцем по графику, чтобы выбрать день',today:'Сегодня',note:'Столбики — тонус дня. ⚠ — критический день',all:'Общий',spread:'Разница между участниками',ncrit:n=>'критических ритмов: '+n,
  n:[['Физический','Муладхара'],['Эмоциональный','Свадхистана'],['Интеллектуальный','Манипура'],['Сердечный','Анахата'],['Творческий','Вишуддха'],['Интуитивный','Аджна'],['Духовный','Сахасрара']],
  wd:['вс','пн','вт','ср','чт','пт','сб'],mon:['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'],fd:(d,m,y)=>d+' '+m+' '+y},
-en:{h:'Daily chakra activity',hint:'Slide your finger across the chart to choose a day',today:'Today',note:'Bars — tone of the day. ⚠ — critical day',
+en:{h:'Daily chakra activity',hg:'Circle biorhythms',hint:'Slide your finger across the chart to choose a day',today:'Today',note:'Bars — tone of the day. ⚠ — critical day',all:'Overall',spread:'Difference between members',ncrit:n=>'critical rhythms: '+n,
  n:[['Physical','Muladhara'],['Emotional','Svadhisthana'],['Intellectual','Manipura'],['Heart','Anahata'],['Creative','Vishuddha'],['Intuitive','Ajna'],['Spiritual','Sahasrara']],
  wd:['Su','Mo','Tu','We','Th','Fr','Sa'],mon:['January','February','March','April','May','June','July','August','September','October','November','December'],fd:(d,m,y)=>m+' '+d+', '+y},
-es:{h:'Actividad diaria de los chakras',hint:'Desliza el dedo por el gráfico para elegir un día',today:'Hoy',note:'Barras — tono del día. ⚠ — día crítico',
+es:{h:'Actividad diaria de los chakras',hg:'Biorritmos del círculo',hint:'Desliza el dedo por el gráfico para elegir un día',today:'Hoy',note:'Barras — tono del día. ⚠ — día crítico',all:'General',spread:'Diferencia entre miembros',ncrit:n=>'ritmos críticos: '+n,
  n:[['Físico','Muladhara'],['Emocional','Svadhisthana'],['Intelectual','Manipura'],['Del corazón','Anahata'],['Creativo','Vishuddha'],['Intuitivo','Ajna'],['Espiritual','Sahasrara']],
  wd:['do','lu','ma','mi','ju','vi','sá'],mon:['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'],fd:(d,m,y)=>d+' de '+m+' de '+y},
-pt:{h:'Atividade diária dos chakras',hint:'Deslize o dedo pelo gráfico para escolher um dia',today:'Hoje',note:'Barras — tônus do dia. ⚠ — dia crítico',
+pt:{h:'Atividade diária dos chakras',hg:'Biorritmos do círculo',hint:'Deslize o dedo pelo gráfico para escolher um dia',today:'Hoje',note:'Barras — tônus do dia. ⚠ — dia crítico',all:'Geral',spread:'Diferença entre os membros',ncrit:n=>'ritmos críticos: '+n,
  n:[['Físico','Muladhara'],['Emocional','Svadhisthana'],['Intelectual','Manipura'],['Do coração','Anahata'],['Criativo','Vishuddha'],['Intuitivo','Ajna'],['Espiritual','Sahasrara']],
  wd:['dom','seg','ter','qua','qui','sex','sáb'],mon:['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'],fd:(d,m,y)=>d+' de '+m+' de '+y}};
 const q=new URLSearchParams(location.hash.slice(1));
 const X=T[q.get('l')]||T.ru;
 const pd=s=>{const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(s||'');return m?Date.UTC(+m[1],m[2]-1,+m[3]):null};
-const birth=pd(q.get('b')), today=pd(q.get('d'))||Date.UTC(new Date().getFullYear(),new Date().getMonth(),new Date().getDate());
-const DAY=864e5, BEFORE=10, N=21, W=1080, L=84, R=1064, TT=20, B=1060, CW=(R-L)/N, MID=(TT+B)/2, AMP=(B-TT)/2-12;
-let center=0, sel=0;           // center = window centre offset from today; sel = selected offset from today
+const now=new Date(), today=pd(q.get('d'))||Date.UTC(now.getFullYear(),now.getMonth(),now.getDate()), DAY=864e5;
+// group mode: m=Name~YYYY-MM-DD|Name~YYYY-MM-DD ; single mode: b=YYYY-MM-DD
+const members=(q.get('m')||'').split('|').map(s=>s.split('~')).filter(a=>a.length===2&&pd(a[1])!=null).map(([n,b])=>({n,t0:(today-pd(b))/DAY}));
+const GROUP=members.length>=2, t0=GROUP?0:((today-(pd(q.get('b'))??today))/DAY);
+const BEFORE=10,N=21,W=1080,L=84,R=1064,TT=20,B=1060,CW=(R-L)/N,MID=(TT+B)/2,AMP=(B-TT)/2-12;
+let center=0, sel=0, tab=-1;
 const val=(t,p)=>Math.sin(2*Math.PI*t/p);
 const crit=(t,p)=>{const h=p/2,r=((t%h)+h)%h;return Math.min(r,h-r)<=0.5};
-const t0=birth==null?0:(today-birth)/DAY;
-const x=d=>L+(d-center+BEFORE+0.5)*CW, y=v=>MID-v*AMP;
-const el=id=>document.getElementById(id);
-el('h').textContent=X.h; el('hint').textContent=X.hint; el('note').textContent=X.note; el('td').textContent=X.today;
+const avg7=t=>P.reduce((a,p)=>a+val(t,p),0)/P.length;
+function series(){
+  if(!GROUP) return P.map((p,k)=>({name:X.n[k][0],sub:X.n[k][1],col:COL[k],f:d=>val(t0+d,p),crit:d=>crit(t0+d,p)}));
+  return members.map((m,i)=>({name:m.n,sub:'',col:MCOL[i%MCOL.length],
+    f:tab<0?d=>avg7(m.t0+d):d=>val(m.t0+d,P[tab]),
+    crit:tab<0?d=>P.filter(p=>crit(m.t0+d,p)).length:d=>crit(m.t0+d,P[tab])}));
+}
+const x=d=>L+(d-center+BEFORE+0.5)*CW, y=v=>MID-v*AMP, el=id=>document.getElementById(id);
+el('h').textContent=GROUP?X.hg:X.h; el('hint').textContent=X.hint; el('note').textContent=X.note; el('td').textContent=X.today;
+function tabs(){ if(!GROUP) return; const names=[X.all,...X.n.map(a=>a[0])];
+  el('tabs').innerHTML=names.map((n,i)=>`<button data-t="${i-1}" class="${i-1===tab?'on':''}">${n}</button>`).join('');
+  el('tabs').querySelectorAll('button').forEach(b=>b.onclick=()=>{tab=+b.dataset.t;tabs();draw()}); }
+function labels(S){ // names drawn along curves where they are farthest from other curves
+  const FS=26,placed=[],dOf=xx=>(xx-L)/CW-BEFORE-0.5+center,tz0=x(sel)-CW*1.2,tz1=x(sel)+CW*1.2; let out='';
+  S.forEach((sr,k)=>{ let best=null; const full=sr.name, short=full.length>7?full.slice(0,5)+'.':full;
+    for(const txt of [full,short]){ const len=txt.length*FS*0.62+10;
+      for(let d=center-BEFORE;d<=center-BEFORE+N-1;d+=0.25){
+        const cx=x(d),cy=y(sr.f(d)),sl=(y(sr.f(d+.05))-y(sr.f(d-.05)))/(0.1*CW),ang=Math.atan(sl),half=len/2*Math.cos(ang);
+        const x0=cx-half,x1=cx+half,y0=cy-half*sl,y1=cy+half*sl;
+        if(x0<L+6||x1>R-6||Math.min(y0,y1)-FS<TT+2||Math.max(y0,y1)+FS>B-2) continue;
+        if(x1>tz0&&x0<tz1) continue;
+        const ymin=Math.min(y0,y1)-FS*.7,ymax=Math.max(y0,y1)+FS*.7;
+        if(placed.some(b=>x0<b[2]+6&&x1>b[0]-6&&ymin<b[3]&&ymax>b[1])) continue;
+        let sep=1e9,dev=0;
+        for(let xx=x0;xx<=x1;xx+=5){const line=cy+(xx-cx)*sl;dev=Math.max(dev,Math.abs(y(sr.f(dOf(xx)))-line));S.forEach((o,j)=>{if(j!==k)sep=Math.min(sep,Math.abs(y(o.f(dOf(xx)))-line))});}
+        if(dev>FS*.45) continue; const score=sep-dev; if(!best||score>best.score) best={score,cx,cy,ang,txt,box:[x0,ymin,x1,ymax]};
+      } if(best&&best.score>FS*.8) break; }
+    if(best&&best.score>FS*.5){placed.push(best.box);out+=`<text x="${best.cx}" y="${best.cy+FS*.36}" transform="rotate(${best.ang*180/Math.PI} ${best.cx} ${best.cy})" font-size="${FS}" font-weight="bold" fill="${sr.col}" stroke="#f8f4ea" stroke-width="7" paint-order="stroke" text-anchor="middle">${best.txt.replace(/</g,'&lt;')}</text>`;}
+  }); return out; }
 function draw(){
-  let s='<rect width="1080" height="1180" fill="#f8f4ea"/>';
+  const S=series(); let s='<rect width="1080" height="1180" fill="#f8f4ea"/>';
   const sx=L+(sel-center+BEFORE)*CW, GW=CW*0.7;
   s+=`<defs><linearGradient id="gl"><stop offset="0" stop-color="#c9b98f" stop-opacity="0"/><stop offset="1" stop-color="#c9b98f" stop-opacity=".55"/></linearGradient><linearGradient id="gr"><stop offset="0" stop-color="#c9b98f" stop-opacity=".55"/><stop offset="1" stop-color="#c9b98f" stop-opacity="0"/></linearGradient></defs>`;
   s+=`<rect x="${sx-GW}" y="${TT}" width="${GW}" height="${B-TT+80}" fill="url(#gl)"/><rect x="${sx+CW}" y="${TT}" width="${GW}" height="${B-TT+80}" fill="url(#gr)"/><rect x="${sx}" y="${TT}" width="${CW}" height="${B-TT+80}" fill="#cdbd94" opacity=".85"/>`;
@@ -65,18 +98,22 @@ function draw(){
     const c=sun?'#a23b22':(isS||isT)?'#1f2a4a':'#7a7468', fw=(isS||isT)?'bold':'normal';
     s+=`<text x="${cx}" y="${B+38}" fill="${c}" font-size="31" font-weight="${fw}" text-anchor="middle"${isT?' text-decoration="underline"':''}>${dt.getUTCDate()}</text>`;
     s+=`<text x="${cx}" y="${B+70}" fill="${c}" font-size="${X.wd[0].length>2?21:24}" font-weight="${fw}" text-anchor="middle">${X.wd[dt.getUTCDay()]}</text>`;
-    const avg=P.reduce((a,p)=>a+val(t0+d,p),0)/P.length, h=Math.abs(avg)*AMP;
+    const avg=S.reduce((a,sr)=>a+sr.f(d),0)/S.length, h=Math.abs(avg)*AMP;
     s+=`<rect x="${L+i*CW+3}" y="${avg>=0?MID-h:MID}" width="${CW-6}" height="${h}" fill="${avg>=0?'#2e8b57':'#c9573d'}" opacity=".55"/>`;
   }
   s+=`<line x1="${L}" y1="${MID}" x2="${R}" y2="${MID}" stroke="#a8863a" stroke-width="2"/>`;
-  P.forEach((p,k)=>{const pts=[];for(let d=center-BEFORE-.5;d<=center-BEFORE+N-.5+1e-9;d+=.125)pts.push(x(d).toFixed(1)+','+y(val(t0+d,p)).toFixed(1));
-    s+=`<polyline points="${pts.join(' ')}" fill="none" stroke="${COL[k]}" stroke-width="6.5" stroke-linejoin="round"/>`;
-    const v=val(t0+sel,p); s+=`<circle cx="${x(sel)}" cy="${y(v)}" r="10" fill="${COL[k]}" stroke="#fff" stroke-width="3"/>`;});
+  S.forEach(sr=>{const pts=[];for(let d=center-BEFORE-.5;d<=center-BEFORE+N-.5+1e-9;d+=.125)pts.push(x(d).toFixed(1)+','+y(sr.f(d)).toFixed(1));
+    s+=`<polyline points="${pts.join(' ')}" fill="none" stroke="${sr.col}" stroke-width="6.5" stroke-linejoin="round"/>`;});
+  s+=labels(S);
+  S.forEach(sr=>{s+=`<circle cx="${x(sel)}" cy="${y(sr.f(sel))}" r="10" fill="${sr.col}" stroke="#fff" stroke-width="3"/>`;});
   s+=`<rect x="${L}" y="${TT}" width="${R-L}" height="${B-TT+80}" fill="none" stroke="#a8863a" stroke-width="1.5" rx="4"/>`;
   el('c').innerHTML=s;
   const dt=new Date(today+sel*DAY); el('date').textContent=X.fd(dt.getUTCDate(),X.mon[dt.getUTCMonth()],dt.getUTCFullYear())+' · '+X.wd[dt.getUTCDay()];
-  el('leg').innerHTML=P.map((p,k)=>{const v=val(t0+sel,p),pc=Math.round((v+1)*50),up=val(t0+sel+1,p)>v,cr=crit(t0+sel,p);
-    return `<div class="row"><span class="dot" style="background:${COL[k]}"></span><span class="nm">${X.n[k][0]} <small>(${X.n[k][1]})</small></span><span class="pc">${pc}%</span><span class="ar" style="color:${up?'#2e8b57':'#c62828'}">${up?'▲':'▼'}</span><span class="ar" style="color:#c27a00">${cr?'⚠':''}</span><span class="bar"><i style="width:${Math.max(4,pc)}%;background:${COL[k]}"></i></span></div>`}).join('');
+  const pcs=[];
+  el('leg').innerHTML=S.map(sr=>{const v=sr.f(sel),pc=Math.round((v+1)*50),up=sr.f(sel+1)>v,cr=sr.crit(sel);pcs.push(pc);
+    const cm=typeof cr==='number'?(cr?'⚠'+cr:''):(cr?'⚠':'');
+    return `<div class="row"><span class="dot" style="background:${sr.col}"></span><span class="nm">${sr.name.replace(/</g,'&lt;')}${sr.sub?` <small>(${sr.sub})</small>`:''}</span><span class="pc">${pc}%</span><span class="ar" style="color:${up?'#2e8b57':'#c62828'}">${up?'▲':'▼'}</span><span class="ar" style="color:#c27a00;width:34px">${cm}</span><span class="bar"><i style="width:${Math.max(4,pc)}%;background:${sr.col}"></i></span></div>`}).join('');
+  el('sum').textContent=GROUP?`${X.spread}: ${Math.max(...pcs)-Math.min(...pcs)}%`:'';
 }
 const svg=el('c');
 function pick(ev){const r=svg.getBoundingClientRect(),px=(ev.clientX-r.left)/r.width*W,i=Math.max(0,Math.min(N-1,Math.floor((px-L)/CW))),ns=center-BEFORE+i;
@@ -87,5 +124,5 @@ svg.addEventListener('pointermove',e=>{if(down)pick(e)});
 svg.addEventListener('pointerup',()=>down=false);svg.addEventListener('pointercancel',()=>down=false);
 el('pv').onclick=()=>{center-=7;sel-=7;draw()};el('nx').onclick=()=>{center+=7;sel+=7;draw()};el('td').onclick=()=>{center=0;sel=0;draw()};
 try{Telegram.WebApp.ready();Telegram.WebApp.expand();Telegram.WebApp.setHeaderColor('#f8f4ea');Telegram.WebApp.setBackgroundColor('#f8f4ea')}catch(e){}
-draw();
+tabs(); draw();
 </script></body></html>
