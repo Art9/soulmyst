@@ -11,6 +11,8 @@ h1{font-family:Georgia,"DejaVu Serif",serif;font-size:20px;text-align:center;mar
 #date{text-align:center;font-size:18px;color:#7a7468;margin-bottom:4px}
 #who{text-align:center;font-size:16px;font-weight:bold;color:#1f2a4a;margin:0 0 4px}
 #old{display:none;position:sticky;top:0;z-index:9;background:#fff1d6;border:1px solid #c9822b;border-radius:10px;padding:10px 12px;margin:0 0 8px;font-size:15px;text-align:center;line-height:1.4}#old button{margin-top:6px;font-size:15px;padding:7px 14px;border:0;border-radius:8px;background:#1f2a4a;color:#fff}
+#date.go{cursor:pointer}#date.go:after{content:" ✎";font-size:15px;color:#a8863a}
+#goto{display:none;text-align:center;margin:2px 0 8px}#goto input[type=text]{font-size:18px;width:9.5em;padding:6px 8px;border:1px solid #a8863a;border-radius:8px;background:#fffaf0;color:#1f2a4a;text-align:center}#goto button{font-size:16px;padding:7px 10px;margin-left:4px;border:1px solid #a8863a;border-radius:8px;background:#1f2a4a;color:#fff}#goto button.l{background:#fffaf0;color:#1f2a4a}#gerr{color:#b3261e;font-size:14px;margin-top:4px;min-height:1px}
 #hint{text-align:center;font-size:13px;color:#7a7468;margin:2px 0 6px}
 #tabs{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:4px 0 8px}
 #tabs button{font-size:14px;padding:6px 10px;border:1px solid #a8863a;background:#fffaf0;color:#1f2a4a;border-radius:14px}
@@ -29,7 +31,7 @@ svg{width:100%;height:auto;display:block;touch-action:none}
 .card{background:#fffaf0;border:1px solid #e0d3b0;border-radius:10px;padding:10px 12px;margin:10px 0;font-size:15px;line-height:1.45}.card h3{margin:0 0 6px;font-size:17px;font-family:Georgia,"DejaVu Serif",serif}.rt{font-size:14px;color:#4a4030;margin-top:4px;line-height:1.4}
 .note{text-align:center;color:#7a7468;font-size:13px;margin-top:8px}
 </style></head><body><div id="wrap">
-<div id="old"></div><h1 id="h"></h1><div id="who"></div><div id="date"></div><div id="tabs"></div><div id="hint"></div>
+<div id="old"></div><h1 id="h"></h1><div id="who"></div><div id="date"></div><div id="goto"><input type="text" id="gin" inputmode="numeric" maxlength="10" autocomplete="off"><button id="gok"></button><button id="gcal" class="l">📅</button><input type="date" id="gdt" style="position:absolute;opacity:0;width:1px;height:1px;pointer-events:none"><div id="gerr"></div></div><div id="tabs"></div><div id="hint"></div>
 <svg id="c" viewBox="0 0 1080 1215"></svg>
 <div class="nav"><button id="pv">◀ 7</button><button id="td"></button><button id="nx">7 ▶</button></div>
 <div class="card" id="lun"></div><div class="card" id="bio"></div><div id="leg"></div><div class="sum" id="sum"></div><div class="note" id="note"></div><div class="nav" id="bb"></div>
@@ -62,7 +64,7 @@ const now=new Date(), today=pd(q.get('d'))||Date.UTC(now.getFullYear(),now.getMo
 const members=(q.get('m')||'').split('|').map(s=>s.split('~')).filter(a=>a.length>=2&&pd(a[1])!=null).map(([n,b,r])=>({n,t0:(today-pd(b))/DAY,w:cwOf(r)}));
 const MYW=cwOf(q.get('r')), GROUP=members.length>=2, t0=GROUP?0:((today-(pd(q.get('b'))??today))/DAY);
 const BEFORE=10,N=21,W=1080,L=84,R=1064,TT=78,B=1095,CW=(R-L)/N,MID=(TT+B)/2,AMP=(B-TT)/2-12;
-let center=0, sel=0, tab=-2;   // (reset to -1 below for the personal chart)            // -2 = all rhythms of all members, -1 = overall tone, 0..6 = one rhythm
+let PIN=false, center=0, sel=0, tab=-2;   // (reset to -1 below for the personal chart)            // -2 = all rhythms of all members, -1 = overall tone, 0..6 = one rhythm
 const DASH=['','22 10','5 9','24 8 5 8','12 6','2 6'];
 const val=(t,p)=>Math.sin(2*Math.PI*t/p);
 const crit=(t,p)=>{const h=p/2,r=((t%h)+h)%h;return Math.min(r,h-r)<=0.5};
@@ -87,7 +89,7 @@ const WVT={ru:{hi:'Окно силы',top:'Пик раскрытия',lo:'Пер
  en:{hi:'Power window',top:'Peak of opening',lo:'Quiet period',deep:'Deep quiet period',cv:'◎ Convergence day — all rhythms cross the middle together',in:n=>`in ${n} d`,jt:'for everyone in the circle'},
  es:{hi:'Ventana de fuerza',top:'Pico de apertura',lo:'Período de calma',deep:'Período de calma profundo',cv:'◎ Día de convergencia — todos los ritmos cruzan el centro juntos',in:n=>`en ${n} d`,jt:'para todo el círculo'},
  pt:{hi:'Janela de força',top:'Pico de abertura',lo:'Período de calma',deep:'Período de calma profundo',cv:'◎ Dia de convergência — todos os ritmos cruzam o meio juntos',in:n=>`em ${n} d`,jt:'para todo o círculo'}}[q.get('l')]||null;
-let WINS=null;const wins=()=>WINS??=(GROUP?jointW(members.map(m=>m.t0),-400,400):windows(t0,-400,400));
+let WINS=null,WC=0;const wins=()=>{if(WINS&&Math.abs(center-WC)<=300)return WINS;WC=center;return WINS=(GROUP?jointW(members.map(m=>m.t0),WC-400,WC+400):windows(t0,WC-400,WC+400))};   // re-centred when the user jumps far away
 const winAt=d=>wins().find(o=>o.start<=d&&d<=o.end), wName=o=>{const W=WVT||{hi:'Окно силы',top:'Пик раскрытия',lo:'Период тишины',deep:'глубокий Период тишины'};return o.type==='hi'?(o.strong?W.top:W.hi):(o.strong?W.deep:W.lo)};
 const TS=()=>GROUP?members.map(m=>m.t0):[t0];
 const WS=()=>GROUP?members.map(m=>m.w):[MYW];
@@ -175,7 +177,7 @@ function draw(){
   S.forEach(sr=>{s+=`<circle cx="${x(sel)}" cy="${y(sr.f(sel))}" r="10" fill="${sr.col}" stroke="#fff" stroke-width="3"/>`;});
   s+=`<rect x="${L}" y="${TT}" width="${R-L}" height="${B-TT+80}" fill="none" stroke="#a8863a" stroke-width="1.5" rx="4"/>`;
   el('c').innerHTML=s;
-  const dt=new Date(today+sel*DAY); el('date').textContent=X.fd(dt.getUTCDate(),X.mon[dt.getUTCMonth()],dt.getUTCFullYear())+' · '+X.wd[dt.getUTCDay()];
+  const dt=new Date(today+sel*DAY); el('date').textContent=(PIN?'📌 ':'')+X.fd(dt.getUTCDate(),X.mon[dt.getUTCMonth()],dt.getUTCFullYear())+' · '+X.wd[dt.getUTCDay()];
   const pcs=[];
   el('leg').innerHTML='<table style="width:100%;border-collapse:collapse">'+S.map((sr,ix)=>{const v=sr.f(sel),pc=Math.round((v+1)*50),up=sr.f(sel+1)>v,cr=sr.crit(sel);pcs.push(pc);
     const cm=typeof cr==='number'?(cr?'⚠'+cr:''):(cr?'⚠':'');
@@ -257,7 +259,24 @@ let down=false;
 svg.addEventListener('pointerdown',e=>{down=true;svg.setPointerCapture(e.pointerId);pick(e)});
 svg.addEventListener('pointermove',e=>{if(down)pick(e)});
 svg.addEventListener('pointerup',()=>down=false);svg.addEventListener('pointercancel',()=>down=false);
-el('pv').onclick=()=>{center-=7;sel-=7;draw()};el('nx').onclick=()=>{center+=7;sel+=7;draw()};el('td').onclick=()=>{center=0;sel=0;draw()};
+el('pv').onclick=()=>{center-=7;sel-=7;draw()};el('nx').onclick=()=>{center+=7;sel+=7;draw()};el('td').onclick=()=>{center=0;sel=0;PIN=false;draw()};
+// ---- jump to any date (personal chart only): from the birth date (but not before 15.10.1582) to 31.12.2100 ----
+if(!GROUP){ const GT={ru:['Показать','Введите дату: ДД.ММ.ГГГГ','Такой даты нет','Это раньше даты рождения ','Дата не может быть позже 31.12.2100','📌 выбранная дата'],en:['Show','Enter a date: DD.MM.YYYY','No such date','This is before the date of birth ','The date cannot be later than 31.12.2100','📌 chosen date'],es:['Mostrar','Escribe una fecha: DD.MM.AAAA','Esa fecha no existe','Es anterior a la fecha de nacimiento ','La fecha no puede ser posterior al 31.12.2100','📌 fecha elegida'],pt:['Mostrar','Digite uma data: DD.MM.AAAA','Essa data não existe','É anterior à data de nascimento ','A data não pode ser posterior a 31.12.2100','📌 data escolhida']}[q.get('l')]||0;
+  const G=GT||['Показать','Введите дату: ДД.ММ.ГГГГ','Такой даты нет','Это раньше даты рождения ','Дата не может быть позже 31.12.2100','📌 выбранная дата'];
+  const bt=pd(q.get('b')), LO=Math.max(bt??-Infinity,Date.UTC(1582,9,15)), HI=Date.UTC(2100,11,31), iso=t=>new Date(t).toISOString().slice(0,10), dmy=t=>iso(t).split('-').reverse().join('.');
+  const dE=el('date'), box=el('goto'), inp=el('gin'), err=el('gerr'), cal=el('gdt');
+  dE.classList.add('go'); el('gok').textContent=G[0]; inp.placeholder=G[1].split(': ')[1]||'ДД.ММ.ГГГГ'; cal.min=iso(LO); cal.max=iso(HI);
+  const cur=()=>today+sel*DAY;
+  dE.onclick=()=>{const open=box.style.display!=='block';box.style.display=open?'block':'none';err.textContent='';if(open){inp.value=dmy(cur());inp.focus();inp.select()}};
+  inp.addEventListener('input',()=>{const d=inp.value.replace(/\D/g,'').slice(0,8);inp.value=d.length>4?d.slice(0,2)+'.'+d.slice(2,4)+'.'+d.slice(4):d.length>2?d.slice(0,2)+'.'+d.slice(2):d;err.textContent=''});
+  const go=t=>{const off=Math.round((t-today)/DAY);center=off;sel=off;PIN=off!==0;box.style.display='none';err.textContent='';try{inp.blur()}catch(e){}draw();window.scrollTo(0,0)};
+  const submit=()=>{const m=/^(\d{2})\.(\d{2})\.(\d{4})$/.exec(inp.value);if(!m){err.textContent=G[1];return}
+    const t=Date.UTC(+m[3],m[2]-1,+m[1]),d=new Date(t);if(d.getUTCDate()!==+m[1]||d.getUTCMonth()!==m[2]-1){err.textContent=G[2];return}
+    if(t<LO){err.textContent=bt!=null&&bt>=Date.UTC(1582,9,15)?G[3]+'('+dmy(bt)+')':G[3];return} if(t>HI){err.textContent=G[4];return} go(t)};
+  el('gok').onclick=submit; inp.addEventListener('keydown',e=>{if(e.key==='Enter')submit()});
+  el('gcal').onclick=()=>{cal.value=iso(Math.min(Math.max(cur(),LO),HI));try{cal.showPicker()}catch(e){cal.style.pointerEvents='auto';cal.focus();cal.click()}};
+  cal.addEventListener('change',()=>{if(!cal.value)return;const t=pd(cal.value);if(t==null)return;if(t<LO||t>HI){inp.value=dmy(t);submit();return}inp.value=dmy(t);go(t)});
+}
 try{Telegram.WebApp.ready();Telegram.WebApp.expand();Telegram.WebApp.setHeaderColor('#f8f4ea');Telegram.WebApp.setBackgroundColor('#f8f4ea')}catch(e){}
 if(!GROUP) tab=-1;   // personal chart: never the circle table view
 tabs(); draw();
