@@ -3,7 +3,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>Soul Myst</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
-<script src="astronomy.min.js"></script><script src="daydata.js"></script><script src="help.js"></script>
+<script src="astronomy.min.js"></script><script src="daydata.js"></script><script src="help.js"></script><script src="daytype.js"></script>
 <style>
 html,body{margin:0;background:#f8f4ea;color:#1f2a4a;font-family:"DejaVu Sans",Roboto,Arial,sans-serif;-webkit-user-select:none;user-select:none}
 #wrap{max-width:720px;margin:0 auto;padding:8px 8px 16px}
@@ -75,7 +75,7 @@ const zoneOf=(v,up)=>v>=Z.HI?(up?'hi':null):v<=Z.LO?(up?null:'lo'):Math.abs(v-50
 const states=t=>{const o=[];P.forEach((p,k)=>{const v=(val(t,p)+1)*50,z=zoneOf(v,Math.cos(2*Math.PI*t/p)>0);if(z)o.push({k,v:Math.round(v),z})});return o};
 const Wt=(st,w)=>st.reduce((a,o)=>a+(o.z==='mid'?2:1)*w[o.k],0);   // transition = 2, approach to peak/trough = 1, × chakra activity
 function score(ts){const ws=WS(),S=ts.map(states);if(ts.length===1)return Math.round(Wt(S[0],ws[0])*10)/10;let s=0;for(let a=0;a<S.length;a++)for(let b=a+1;b<S.length;b++){s+=Wt(S[a],ws[a])*Wt(S[b],ws[b]);s+=S[a].filter(x=>S[b].some(y=>y.k===x.k)).reduce((q,x)=>q+Math.min(ws[a][x.k],ws[b][x.k]),0);}return Math.round(s*10)/10;}
-let TH=null;function thr(ts){if(TH!=null)return TH;const arr=[];for(let d=-365;d<=365;d++)arr.push(score(ts.map(t=>t+d)));arr.sort((a,b)=>a-b);TH=Math.max(arr[Math.floor(arr.length*.90)],ts.length===1?3:1);return TH;}
+let TH=null,ARR=null;function thr(ts){if(TH!=null)return TH;const arr=[];for(let d=-365;d<=365;d++)arr.push(score(ts.map(t=>t+d)));arr.sort((a,b)=>a-b);ARR=arr;TH=Math.max(arr[Math.floor(arr.length*.90)],ts.length===1?3:1);return TH;}
 
 // ---- waves (same as waves.mjs on the server): Окно силы avg>=70 / Период тишины avg<=30, min 3 days ----
 const WV={HI:70,TOP:80,LO:30,BOT:20,MIN:3}, apc=t=>(avg7(t)+1)*50;
@@ -85,10 +85,10 @@ function windows(t0,from,to){const out=[];let d=from-20;while(apc(t0+d)>=WV.HI||
     let c=d;while(type==='hi'?apc(t0+c)>50:apc(t0+c)<50)c--;if(Math.abs(apc(t0+c+1)-50)<Math.abs(apc(t0+c)-50))c++;
     if(e>=from&&e-d+1>=WV.MIN)out.push({type,start:d,end:e,conv:c,strong:type==='hi'?ext>=WV.TOP:ext<=WV.BOT});d=e;}return out;}
 function jointW(ts,from,to){const ws=ts.map(t=>windows(t,from,to)),out=[];for(const type of['hi','lo']){let s=null;for(let d=from;d<=to+1;d++){const all=d<=to&&ws.every(w=>w.some(o=>o.type===type&&o.start<=d&&d<=o.end));if(all&&s==null)s=d;if(!all&&s!=null){out.push({type,start:s,end:d-1,conv:null});s=null;}}}return out;}
-const WVT={ru:{hi:'Окно силы',top:'Пик раскрытия',lo:'Период тишины',deep:'глубокий Период тишины',cv:'◎ День схождения — все ритмы вместе пересекают середину',in:n=>`через ${n} дн.`,jt:'у всех в круге'},
- en:{hi:'Power window',top:'Peak of opening',lo:'Quiet period',deep:'Deep quiet period',cv:'◎ Convergence day — all rhythms cross the middle together',in:n=>`in ${n} d`,jt:'for everyone in the circle'},
- es:{hi:'Ventana de fuerza',top:'Pico de apertura',lo:'Período de calma',deep:'Período de calma profundo',cv:'◎ Día de convergencia — todos los ritmos cruzan el centro juntos',in:n=>`en ${n} d`,jt:'para todo el círculo'},
- pt:{hi:'Janela de força',top:'Pico de abertura',lo:'Período de calma',deep:'Período de calma profundo',cv:'◎ Dia de convergência — todos os ritmos cruzam o meio juntos',in:n=>`em ${n} d`,jt:'para todo o círculo'}}[q.get('l')]||null;
+const WVT={ru:{hi:'Окно силы',top:'Пик раскрытия',lo:'Период тишины',deep:'глубокий Период тишины',cv:{hi:n=>`↗ Порог силы — общий фон переходит в фазу силы, через ${n} дн. начинается Окно силы`,lo:n=>`↘ Порог тишины — общий фон переходит в фазу тишины, через ${n} дн. начинается Период тишины`},in:n=>`через ${n} дн.`,jt:'у всех в круге'},
+ en:{hi:'Power window',top:'Peak of opening',lo:'Quiet period',deep:'Deep quiet period',cv:{hi:n=>`↗ Power threshold — the overall background enters the power phase; the power window begins in ${n} d`,lo:n=>`↘ Quiet threshold — the overall background enters the quiet phase; the quiet period begins in ${n} d`},in:n=>`in ${n} d`,jt:'for everyone in the circle'},
+ es:{hi:'Ventana de fuerza',top:'Pico de apertura',lo:'Período de calma',deep:'Período de calma profundo',cv:{hi:n=>`↗ Umbral de fuerza — el fondo general entra en la fase de fuerza; la ventana de fuerza empieza en ${n} d`,lo:n=>`↘ Umbral de calma — el fondo general entra en la fase de calma; el período de calma empieza en ${n} d`},in:n=>`en ${n} d`,jt:'para todo el círculo'},
+ pt:{hi:'Janela de força',top:'Pico de abertura',lo:'Período de calma',deep:'Período de calma profundo',cv:{hi:n=>`↗ Limiar de força — o fundo geral entra na fase de força; a janela de força começa em ${n} d`,lo:n=>`↘ Limiar de calma — o fundo geral entra na fase de calma; o período de calma começa em ${n} d`},in:n=>`em ${n} d`,jt:'para todo o círculo'}}[q.get('l')]||null;
 let WINS=null,WC=0;const wins=()=>{if(WINS&&Math.abs(center-WC)<=300)return WINS;WC=center;return WINS=(GROUP?jointW(members.map(m=>m.t0),WC-400,WC+400):windows(t0,WC-400,WC+400))};   // re-centred when the user jumps far away
 const winAt=d=>wins().find(o=>o.start<=d&&d<=o.end), wName=o=>{const W=WVT||{hi:'Окно силы',top:'Пик раскрытия',lo:'Период тишины',deep:'глубокий Период тишины'};return o.type==='hi'?(o.strong?W.top:W.hi):(o.strong?W.deep:W.lo)};
 const TS=()=>GROUP?members.map(m=>m.t0):[t0];
@@ -163,7 +163,7 @@ function draw(){
     s+=`<text x="${cx}" y="${B+38}" fill="${c}" font-size="31" font-weight="${fw}" text-anchor="middle"${isT?' text-decoration="underline"':''}>${dt.getUTCDate()}</text>`;
     s+=`<text x="${cx}" y="${B+70}" fill="${c}" font-size="${X.wd[0].length>2?21:24}" font-weight="${fw}" text-anchor="middle">${X.wd[dt.getUTCDay()]}</text>`;
     { const w=winAt(d); if(w) s+=`<rect x="${L+i*CW}" y="${TT}" width="${CW}" height="${B-TT}" fill="${w.type==='hi'?'#e8b923':'#5b3f99'}" opacity="${w.type==='hi'?.16:.13}"/><rect x="${L+i*CW}" y="${TT}" width="${CW}" height="10" fill="${w.type==='hi'?'#d4a017':'#5b3f99'}"/>`;
-      if(wins().some(o=>o.conv===d)) s+=`<line x1="${cx}" y1="${TT}" x2="${cx}" y2="${B}" stroke="#7a5c00" stroke-width="3" stroke-dasharray="10 8" opacity=".7"/><text x="${cx}" y="${TT+34}" font-size="26" text-anchor="middle" fill="#7a5c00">◎</text>`; }
+      {const cv=wins().find(o=>o.conv===d);if(cv) s+=`<line x1="${cx}" y1="${TT}" x2="${cx}" y2="${B}" stroke="#7a5c00" stroke-width="3" stroke-dasharray="10 8" opacity=".7"/><text x="${cx}" y="${TT+34}" font-size="26" text-anchor="middle" fill="#7a5c00">${cv.type==='hi'?'↗':'↘'}</text>`;} }
     const avg=S.reduce((a,sr)=>a+sr.f(d),0)/S.length, h=Math.abs(avg)*AMP;
     s+=`<rect x="${L+i*CW+3}" y="${avg>=0?MID-h:MID}" width="${CW-6}" height="${h}" fill="${avg>=0?'#2e8b57':'#c9573d'}" opacity=".55"/>`;
   }
@@ -186,12 +186,12 @@ function draw(){
       +`<tr><td colspan="2" style="padding:0 0 6px;border-bottom:1px solid #eee3cc"><div style="height:12px;background:#e6dcc3;border-radius:6px;overflow:hidden"><div style="height:12px;width:${Math.max(3,pc)}%;background:${sr.col};border-radius:6px"></div></div>${!GROUP&&DL?`<div class="rt">${rText(ix,sel)}</div>`:''}</td></tr>`}).join('')+'</table>';
   { const sc=dayScore(sel), sup=sc>=thr(TS()), zl=(t,nm,w)=>states(t).filter(o=>w[o.k]>=.3).map(o=>`${nm?nm.replace(/</g,'&lt;')+': ':''}${hz('r'+o.k,X.n[o.k][0])} — ${hz(o.z,X.zn[o.z])} (${o.v}%)`);
     const lines=GROUP?members.flatMap(m=>zl(m.t0+sel,m.n,m.w)):zl(t0+sel,'',MYW);
-    const W=WVT||{cv:'◎ День схождения',in:n=>`через ${n} дн.`,jt:''}, fm=d=>{const t=new Date(today+d*DAY);return t.getUTCDate()+' '+X.mon[t.getUTCMonth()]}, cw=winAt(sel), nw=wins().find(o=>o.start>sel&&o.start-sel<=30);
+    const W=WVT||{cv:{hi:n=>'↗ Порог силы',lo:n=>'↘ Порог тишины'},in:n=>`через ${n} дн.`,jt:''}, fm=d=>{const t=new Date(today+d*DAY);return t.getUTCDate()+' '+X.mon[t.getUTCMonth()]}, cw=winAt(sel), nw=wins().find(o=>o.start>sel&&o.start-sel<=30);
     const wl=(cw?`<div style="background:${cw.type==='hi'?'#d4a017':'#5b3f99'};color:#fff;border-radius:8px;padding:8px;margin:6px 0;font-weight:bold">${cw.type==='hi'?'✨':'🌙'} ${wName(cw)}${GROUP?' '+W.jt:''}: ${fm(cw.start)} – ${fm(cw.end)}</div>`:'')
-      +(wins().some(o=>o.conv===sel)?`<div style="color:#7a5c00;font-weight:bold;margin:4px 0">${W.cv}</div>`:'')
+      +((cv=>cv?`<div style="color:#7a5c00;font-weight:bold;margin:4px 0">${hz('porog',(W.cv[cv.type]||W.cv.hi)(cv.start-sel))}</div>`:'')(wins().find(o=>o.conv===sel&&o.start>sel)))
 ;
     el('sum').innerHTML=wl+(sup?`<div data-h="sup" style="background:#c0392b;color:#fff;border-radius:8px;padding:8px;margin:6px 0;font-weight:bold">${X.sup}</div>`:'')
-      +`<div><b>${hz('tension',GROUP?X.cntG(Math.round(sc)):X.cnt1(Math.round(sc)))}</b></div>`+(lines.length?`<div style="font-size:14px;color:#5a4a2a;margin-top:4px">${lines.join('<br>')}</div>`:'')
+      +(GROUP?`<div><b>${hz('tension',X.cntG(DTL().lvl[DAYTYPE.level(sc,ARR,thr(TS()))].replace(/^.*?: /,'')))}</b></div>`+(lines.length?`<div style="font-size:14px;color:#5a4a2a;margin-top:4px">${lines.join('<br>')}</div>`:''):(r=>`<div style="font-size:17px"><b>${r.title}</b></div>`+(r.rhythms?`<div style="font-size:15px;margin-top:3px">${r.rhythms}</div>`:'')+`<div style="font-size:13px;color:#7a7468;margin-top:2px">${hz('phase',r.phase)}</div><div style="text-align:left;font-size:15px;line-height:1.45;margin-top:6px">${r.parts.map(t=>`<p style="margin:5px 0">${t}</p>`).join('')}</div>`)(DAYTYPE.describe(t0+sel,MYW,DAYTYPE.level(sc,ARR,thr(TS())),LG,hz)))
       +(GROUP&&tab!==-2?`<div style="margin-top:6px">${X.spread}: ${Math.max(...pcs)-Math.min(...pcs)}%</div>`:''); }
   dayCards();
   if(tab===-2){ const sw=i=>`<svg width="46" height="12" style="vertical-align:middle"><line x1="2" y1="6" x2="44" y2="6" stroke="#1f2a4a" stroke-width="4"${DASH[i%DASH.length]?` stroke-dasharray="${DASH[i%DASH.length].split(' ').map(v=>v/2).join(' ')}"`:''}/></svg>`;
@@ -200,6 +200,7 @@ function draw(){
     el('leg').innerHTML=h+'</table>'; }
 }
 // ---- "Ваш день": lunar day (tithi) + biorhythm description (texts: daydata.js, built from daily*.mjs) ----
+const DTL=()=>DAYTYPE.TX[LG]||DAYTYPE.TX.ru;
 const LG=q.get('l')||'ru', DL=typeof DD!=='undefined'?(DD[LG]||DD.ru):null, AS=typeof Astronomy!=='undefined'?Astronomy:null;
 const LU={ru:{h1:'1. Лунный день',h2:'2. Ваши биоритмы',from:'с',to:'до',next:(n,nm,t)=>`С ${t} наступает <b>${n}-й лунный день — ${nm}</b>.`,
    wax:'Шукла-пакша (растущая Луна)',wane:'Кришна-пакша (убывающая Луна)',ld:n=>`${n}-й лунный день`,moon:(il,sg,nk)=>`Луна ${il}%, в знаке ${sg}, накшатра ${nk}.`,
