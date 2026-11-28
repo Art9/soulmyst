@@ -1,0 +1,50 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>Soul Myst</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="infodata.js"></script>
+<style>
+html,body{margin:0;background:#f8f4ea;color:#1f2a4a;font-family:"DejaVu Sans",Roboto,Arial,sans-serif}
+#tabs{position:sticky;top:0;z-index:5;background:#f8f4ea;display:flex;flex-wrap:wrap;gap:6px;justify-content:center;padding:8px 6px;border-bottom:1px solid #e0d3b0}
+#tabs button{font-size:14px;padding:7px 11px;border:1px solid #a8863a;background:#fffaf0;color:#1f2a4a;border-radius:14px}
+#tabs button.on{background:#1f2a4a;color:#fff}
+#c{max-width:720px;margin:0 auto;padding:6px 16px 20px;font-size:16.5px;line-height:1.55}
+#c p{margin:0 0 12px}
+#c h2{font-family:Georgia,"DejaVu Serif",serif;font-size:21px;text-align:center;margin:14px 0 12px;letter-spacing:.5px}
+#c h3{font-family:Georgia,"DejaVu Serif",serif;font-size:18px;margin:18px 0 8px;color:#1f2a4a}
+.toc{background:#fffaf0;border:1px solid #e0d3b0;border-radius:10px;padding:8px 12px;margin:6px 0 14px}
+.toc a{display:block;padding:7px 0;color:#1f2a4a;text-decoration:none;border-bottom:1px dotted #d9cfb6}.toc a:last-child{border:0}.toc a:before{content:"▸ ";color:#a8863a}
+details{background:#fffaf0;border:1px solid #e0d3b0;border-radius:10px;margin:8px 0;padding:0 12px}
+summary{padding:11px 0;font-weight:bold;cursor:pointer;list-style:none}summary::-webkit-details-marker{display:none}
+summary:before{content:"▸ ";color:#a8863a}details[open] summary:before{content:"▾ "}
+details>div{padding:0 0 10px}
+.sec{background:#fffaf0;border:1px solid #e0d3b0;border-radius:10px;padding:4px 14px 6px;margin:12px 0;scroll-margin-top:60px}
+#bb{text-align:center;padding:10px 0 24px}#bb button{font-size:16px;padding:9px 26px;border:0;border-radius:8px;background:#1f2a4a;color:#fff}
+</style></head><body>
+<div id="tabs"></div><div id="c"></div><div id="bb"><button id="close"></button></div>
+<script>
+const q=new URLSearchParams(location.hash.slice(1)), LG=q.get('l')||'ru', D=INF[LG]||INF.ru;
+const TL={ru:['Методика','О системе','Глоссарий','Вопросы и ответы','Закрыть','Разделы'],en:['Methodology','About','Glossary','FAQ','Close','Sections'],
+ es:['Metodología','Sobre el sistema','Glosario','Preguntas','Cerrar','Secciones'],pt:['Metodologia','Sobre o sistema','Glossário','Perguntas','Fechar','Seções']}[LG]||['Методика','О системе','Глоссарий','Вопросы и ответы','Закрыть','Разделы'];
+const KEYS=['method','about','gl','fq'];
+// Telegram HTML → page HTML: blank line = paragraph, single newline = line break; a leading <b>TITLE</b> becomes the heading
+const fmt=(t,head)=>{let s=t.trim(); const m=/^<b>([^<]+)<\/b>\s*\n/.exec(s); let h=''; if(m&&head){h=`<${head}>${m[1]}</${head}>`;s=s.slice(m[0].length);}
+  return h+s.split(/\n{2,}/).map(p=>`<p>${p.replace(/\n/g,'<br>')}</p>`).join('');};
+function show(k){ k=KEYS.includes(k)?k:'method';
+  document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.k===k));
+  let h='';
+  if(k==='method') h=fmt(D.method,'h2'); else if(k==='about') h=fmt(D.about,'h2');
+  else if(k==='gl'){ h=`<h2>${TL[2]}</h2><div class="toc">${D.gloss.map(([t],i)=>`<a href="#" data-go="g${i}">${t}</a>`).join('')}</div>`+D.gloss.map(([t,x],i)=>`<div class="sec" id="g${i}">${fmt(x,'h3')}</div>`).join(''); }
+  else { h=`<h2>${TL[3]}</h2>`+D.faq.map(([t,x])=>`<details><summary>${t}</summary><div>${fmt(x.replace(/^<b>[^<]*<\/b>\s*\n+/,''),'')}</div></details>`).join(''); }
+  const c=document.getElementById('c'); c.innerHTML=h; window.scrollTo(0,0);
+  c.querySelectorAll('[data-go]').forEach(a=>a.onclick=e=>{e.preventDefault();document.getElementById(a.dataset.go).scrollIntoView({behavior:'smooth'})});
+  history.replaceState(null,'','#s='+k+'&l='+LG); }
+document.getElementById('tabs').innerHTML=KEYS.map((k,i)=>`<button data-k="${k}">${TL[i]}</button>`).join('');
+document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>show(b.dataset.k));
+document.getElementById('close').textContent=TL[4];
+document.getElementById('close').onclick=()=>{try{Telegram.WebApp.close()}catch(e){history.back()}};
+try{history.scrollRestoration='manual'}catch(e){}
+show(q.get('s'));
+try{Telegram.WebApp.ready();Telegram.WebApp.expand();Telegram.WebApp.setHeaderColor('#f8f4ea');Telegram.WebApp.setBackgroundColor('#f8f4ea')}catch(e){}
+</script></body></html>
