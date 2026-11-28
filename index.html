@@ -3,7 +3,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
 <title>Soul Myst</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
-<script src="astronomy.min.js"></script><script src="daydata.js"></script><script src="help.js"></script><script src="daytype.js"></script>
+<script src="astronomy.min.js"></script><script src="daydata.js"></script><script src="help.js"></script><script src="daytype.js"></script><script src="dayvar.js"></script>
 <style>
 html,body{margin:0;background:#f8f4ea;color:#1f2a4a;font-family:"DejaVu Sans",Roboto,Arial,sans-serif;-webkit-user-select:none;user-select:none}
 #wrap{max-width:720px;margin:0 auto;padding:8px 8px 16px}
@@ -251,13 +251,15 @@ function lunarHtml(dd){ if(!AS) return '';
   h+=`<div style="margin-top:6px;color:#7a7468;font-size:14px">${LX.moon(Math.round(AS.Illumination(AS.Body.Moon,noon).phase_fraction*100),DL.signs[Math.floor(ml/30)],DL.naks[Math.floor(ml/(360/27))])}</div>`;
   return h; }
 const rSt=(t,p)=>{const v=val(t,p),pc=(v+1)*50,c=crit(t,p);return {pc,up:val(t+1,p)>v,crit:c,key:c?'crit':pc>=75?'high':pc<=25?'low':val(t+1,p)>v?'up':'down'}};
-const rText=(k,dd)=>`<i>${hz('r'+k,X.n[k][1])}.</i> ${DL.T[k][rSt(t0+dd,P[k]).key]}`;
+const DVL=typeof DV!=='undefined'?DV[LG]:null, vpick=(base,extra,n)=>{const a=extra?[base,...extra]:[base];return a[((n%a.length)+a.length)%a.length]};   // neighbouring days never repeat a phrase
+const rText=(k,dd)=>{const key=rSt(t0+dd,P[k]).key;return `<i>${hz('r'+k,X.n[k][1])}.</i> ${vpick(DL.T[k][key],DVL&&DVL.T[k][key],Math.floor(t0+dd)+k)}`};
 function bioHtml(dd){ const st=P.map(p=>rSt(t0+dd,p)), avg=P.reduce((a,p)=>a+val(t0+dd,p),0)/P.length*100;
   const strip=s=>s.replace(/<\/?b>/g,m=>m);
-  let h=`<h3>${LX.h2}</h3>`+(DL.TONE.find(([th])=>avg>=th)||DL.TONE[4])[1];
+  const n=Math.floor(t0+dd), ti=(i=>i<0?4:i)(DL.TONE.findIndex(([th])=>avg>=th));
+  let h=`<h3>${LX.h2}</h3>`+vpick(DL.TONE[ti][1],DVL&&DVL.TONE[ti],n);
   const ord=st.map((s,i)=>i).sort((a,b)=>st[b].pc-st[a].pc), strong=ord.filter(i=>st[i].pc>=60&&!st[i].crit).slice(0,2), weak=ord.slice().reverse().filter(i=>st[i].pc<=40||st[i].crit).slice(0,2);
-  if(strong.length) h+='<div style="margin-top:6px">'+DL.lean+strong.map(i=>DL.leanItem(X.n[i][0],DL.T[i].good)).join('; ')+'.</div>';
-  if(weak.length) h+='<div style="margin-top:6px">'+DL.avoid+weak.map(i=>DL.avoidItem(DL.T[i].care,X.n[i][0],st[i].crit)).join('; ')+'.</div>';
+  if(strong.length) h+='<div style="margin-top:6px">'+DL.lean+strong.map(i=>DL.leanItem(X.n[i][0],vpick(DL.T[i].good,DVL&&DVL.T[i].good,n+i))).join('; ')+'.</div>';
+  if(weak.length) h+='<div style="margin-top:6px">'+DL.avoid+weak.map(i=>DL.avoidItem(vpick(DL.T[i].care,DVL&&DVL.T[i].care,n+i),X.n[i][0],st[i].crit)).join('; ')+'.</div>';
   return strip(h); }
 function dayCards(){ const ok=!GROUP&&DL&&!WM; el('lun').style.display=ok&&AS?'':'none'; el('bio').style.display=ok?'':'none'; if(!ok) return;
   try{el('lun').innerHTML=lunarHtml(sel);}catch(e){el('lun').style.display='none';} el('bio').innerHTML=bioHtml(sel); }
