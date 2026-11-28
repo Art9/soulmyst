@@ -120,7 +120,7 @@ function tabs(){ if(!GROUP) return; const names=[X.every,X.all,...X.n.map(a=>a[0
   el('tabs').querySelectorAll('button').forEach(b=>b.onclick=()=>{tab=+b.dataset.t;tabs();draw()}); }
 function labels(S){ // names drawn along curves where they are farthest from other curves
   const FS=26,placed=[],dOf=xx=>(xx-L)/CW-BEFORE-0.5+center,tz0=x(sel)-CW*1.2,tz1=x(sel)+CW*1.2; let out='';
-  S.forEach((sr,k)=>{ let best=null; const full=sr.name, short=full.length>7?full.slice(0,5)+'.':full;
+  S.forEach((sr,k)=>{ if(sr.noLabel) return; let best=null; const full=sr.name, short=full.length>7?full.slice(0,5)+'.':full;
     for(const txt of [full,short]){ const len=txt.length*FS*0.62+10;
       for(let d=center-BEFORE;d<=center-BEFORE+N-1;d+=0.25){
         const cx=x(d),cy=y(sr.f(d)),sl=(y(sr.f(d+.05))-y(sr.f(d-.05)))/(0.1*CW),ang=Math.atan(sl),half=len/2*Math.cos(ang);
@@ -175,7 +175,7 @@ function draw(){
     s+=z==='mid'?`<path d="M${X0-9} ${Y0-9}L${X0+9} ${Y0+9}M${X0+9} ${Y0-9}L${X0-9} ${Y0+9}" stroke="${sr.col}" stroke-width="5" stroke-linecap="round"/>`
       :z==='hi'?`<path d="M${X0} ${Y0-13}L${X0+11} ${Y0+7}L${X0-11} ${Y0+7}Z" fill="${sr.col}" stroke="#fff" stroke-width="2"/>`:`<path d="M${X0} ${Y0+13}L${X0+11} ${Y0-7}L${X0-11} ${Y0-7}Z" fill="${sr.col}" stroke="#fff" stroke-width="2"/>`;}});
   if(WM) s+=wmOverlay(S);
-  if(tab!==-2&&!WM) s+=labels(S);
+  if(tab!==-2) s+=labels(WM?[...S,{noLabel:1,f:d=>avg7(t0+d)}]:S);   // in wave mode labels also keep clear of the bold average line
   S.forEach(sr=>{s+=`<circle cx="${x(sel)}" cy="${y(sr.f(sel))}" r="10" fill="${sr.col}" stroke="#fff" stroke-width="3"/>`;});
   s+=`<rect x="${L}" y="${TT}" width="${R-L}" height="${B-TT+80}" fill="none" stroke="#a8863a" stroke-width="1.5" rx="4"/>`;
   el('c').innerHTML=s;
