@@ -32,8 +32,8 @@ svg{width:100%;height:auto;display:block;touch-action:none}
 .note{text-align:center;color:#7a7468;font-size:13px;margin-top:8px}
 </style></head><body><div id="wrap">
 <div id="old"></div><h1 id="h"></h1><div id="who"></div><div id="tzb" class="card" style="display:none;text-align:center"></div><div id="date"></div><div id="goto"><input type="text" id="gin" inputmode="numeric" maxlength="10" autocomplete="off"><button id="gok"></button><button id="gcal" class="l">📅</button><input type="date" id="gdt" style="position:absolute;opacity:0;width:1px;height:1px;pointer-events:none"><div id="gerr"></div></div><div id="tabs"></div><div id="hint"></div>
-<svg id="c" viewBox="0 0 1080 1215"></svg>
-<div class="nav"><button id="pv">◀ 7</button><button id="td"></button><button id="nx">7 ▶</button></div>
+<div id="yr" style="display:none;margin:2px 0 8px"></div><svg id="c" viewBox="0 0 1080 1215"></svg>
+<div class="nav"><button id="pv">◀ 7</button><button id="td"></button><button id="nx">7 ▶</button></div><div class="card" id="wv" style="display:none"></div>
 <div class="card" id="lun"></div><div class="card" id="bio"></div><div id="leg"></div><div class="sum" id="sum"></div><div class="note" id="note"></div><div class="nav" id="bb"></div>
 </div>
 <script>
@@ -62,7 +62,7 @@ const pd=s=>{const m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(s||'');return m?Date.UTC(+
 const now=new Date(), today=pd(q.get('d'))||Date.UTC(now.getFullYear(),now.getMonth(),now.getDate()), DAY=864e5;
 // group mode: m=Name~YYYY-MM-DD|Name~YYYY-MM-DD ; single mode: b=YYYY-MM-DD
 const members=(q.get('m')||'').split('|').map(s=>s.split('~')).filter(a=>a.length>=2&&pd(a[1])!=null).map(([n,b,r])=>({n,t0:(today-pd(b))/DAY,w:cwOf(r)}));
-const MYW=cwOf(q.get('r')), GROUP=members.length>=2, t0=GROUP?0:((today-(pd(q.get('b'))??today))/DAY);
+const MYW=cwOf(q.get('r')), GROUP=members.length>=2, WM=q.get('w')==='1'&&members.length<2, t0=GROUP?0:((today-(pd(q.get('b'))??today))/DAY);
 const BEFORE=10,N=21,W=1080,L=84,R=1064,TT=78,B=1095,CW=(R-L)/N,MID=(TT+B)/2,AMP=(B-TT)/2-12;
 let PIN=false, center=0, sel=0, tab=-2;   // (reset to -1 below for the personal chart)            // -2 = all rhythms of all members, -1 = overall tone, 0..6 = one rhythm
 const DASH=['','22 10','5 9','24 8 5 8','12 6','2 6'];
@@ -169,11 +169,12 @@ function draw(){
   }
   s+=`<line x1="${L}" y1="${MID}" x2="${R}" y2="${MID}" stroke="#a8863a" stroke-width="2"/>`;
   S.forEach(sr=>{const pts=[];for(let d=center-BEFORE-.5;d<=center-BEFORE+N-.5+1e-9;d+=.125)pts.push(x(d).toFixed(1)+','+y(sr.f(d)).toFixed(1));
-    const ww=sr.w??1;s+=`<polyline points="${pts.join(' ')}" fill="none" stroke="${sr.col}" stroke-width="${(sr.dash!==undefined?4.5:6.5)*(ww<.3?.55:ww<.7?.8:1)}" stroke-opacity="${ww<.3?.28:ww<.7?.6:1}" stroke-linejoin="round"${sr.dash?` stroke-dasharray="${sr.dash}"`:''}/>`;});
+    const ww=sr.w??1;s+=`<polyline points="${pts.join(' ')}" fill="none" stroke="${sr.col}" stroke-width="${(sr.dash!==undefined?4.5:6.5)*(ww<.3?.55:ww<.7?.8:1)}" stroke-opacity="${(ww<.3?.28:ww<.7?.6:1)*(WM?.4:1)}" stroke-linejoin="round"${sr.dash?` stroke-dasharray="${sr.dash}"`:''}/>`;});
   if(!(GROUP&&tab===-1)) S.forEach(sr=>{for(let d=center-BEFORE;d<center-BEFORE+N;d++){const v=(sr.f(d)+1)*50,z=zoneOf(v,sr.f(d+.02)>sr.f(d));if(!z||(sr.w??1)<.3)continue;const X0=x(d),Y0=y(sr.f(d));
     s+=z==='mid'?`<path d="M${X0-9} ${Y0-9}L${X0+9} ${Y0+9}M${X0+9} ${Y0-9}L${X0-9} ${Y0+9}" stroke="${sr.col}" stroke-width="5" stroke-linecap="round"/>`
       :z==='hi'?`<path d="M${X0} ${Y0-13}L${X0+11} ${Y0+7}L${X0-11} ${Y0+7}Z" fill="${sr.col}" stroke="#fff" stroke-width="2"/>`:`<path d="M${X0} ${Y0+13}L${X0+11} ${Y0-7}L${X0-11} ${Y0-7}Z" fill="${sr.col}" stroke="#fff" stroke-width="2"/>`;}});
-  if(tab!==-2) s+=labels(S);
+  if(WM) s+=wmOverlay(S);
+  if(tab!==-2&&!WM) s+=labels(S);
   S.forEach(sr=>{s+=`<circle cx="${x(sel)}" cy="${y(sr.f(sel))}" r="10" fill="${sr.col}" stroke="#fff" stroke-width="3"/>`;});
   s+=`<rect x="${L}" y="${TT}" width="${R-L}" height="${B-TT+80}" fill="none" stroke="#a8863a" stroke-width="1.5" rx="4"/>`;
   el('c').innerHTML=s;
@@ -257,7 +258,7 @@ function bioHtml(dd){ const st=P.map(p=>rSt(t0+dd,p)), avg=P.reduce((a,p)=>a+val
   if(strong.length) h+='<div style="margin-top:6px">'+DL.lean+strong.map(i=>DL.leanItem(X.n[i][0],DL.T[i].good)).join('; ')+'.</div>';
   if(weak.length) h+='<div style="margin-top:6px">'+DL.avoid+weak.map(i=>DL.avoidItem(DL.T[i].care,X.n[i][0],st[i].crit)).join('; ')+'.</div>';
   return strip(h); }
-function dayCards(){ const ok=!GROUP&&DL; el('lun').style.display=ok&&AS?'':'none'; el('bio').style.display=ok?'':'none'; if(!ok) return;
+function dayCards(){ const ok=!GROUP&&DL&&!WM; el('lun').style.display=ok&&AS?'':'none'; el('bio').style.display=ok?'':'none'; if(!ok) return;
   try{el('lun').innerHTML=lunarHtml(sel);}catch(e){el('lun').style.display='none';} el('bio').innerHTML=bioHtml(sel); }
 { const bn=q.get('bn')||'SoulMystBot', go=p=>{try{const W=Telegram.WebApp;if(W.initData&&!W.initDataUnsafe.query_id){W.sendData(p);return}if(p==='menu'){W.close();W.openTelegramLink(`https://t.me/${bn}?start=${p}`)}else W.openTelegramLink(`https://t.me/${bn}?start=${p}`)}catch(e){location.href=`https://t.me/${bn}?start=${p}`}};
   el('bb').innerHTML=`<button id="bm">${LX.menu}</button>`+(GROUP?'':`<button id="bd">${LX.bd}</button>`);
@@ -287,6 +288,51 @@ el('pv').onclick=()=>{center-=7;sel-=7;draw()};el('nx').onclick=()=>{center+=7;s
   el('gcal').onclick=()=>{cal.value=iso(Math.min(Math.max(cur(),LO),HI));try{cal.showPicker()}catch(e){cal.style.pointerEvents='auto';cal.focus();cal.click()}};
   cal.addEventListener('change',()=>{if(!cal.value)return;const t=pd(cal.value);if(t==null)return;if(t<LO||t>HI){inp.value=dmy(t);submit();return}inp.value=dmy(t);go(t)});
 }
+
+// ---- «Волны на год» mode (#w=1): year ribbon + one wave per screen + prev/next ----
+const WMT={h:'Волны на год',hint:'Тап по волне на ленте — переход к ней. Ведите пальцем по графику, чтобы выбрать день',prev:'◀ Предыдущая',next:'Следующая ▶',of:(i,n)=>`Волна ${i} из ${n}`,none:'В ближайший год волн нет',
+  now:n=>`идёт сейчас · осталось ${n} дн.`,in:n=>`через ${n} дн.`,past:'уже прошла',len:n=>`${n} дн.`,prep:'подготовка',avg:'общий фон',
+  ext:(hi,v)=>hi?`Максимум общего фона: ${v}%`:`Минимум общего фона: ${v}%`,porog:(hi,d)=>`${hi?'↗ Порог силы':'↘ Порог тишины'}: ${d}`,toDay:'◂ Ваш день',toWaves:'📅 Волны на год'};
+let YW=[],WI=0;
+function wmOverlay(S){ let s=''; const o=YW[WI];
+  if(o){ for(let d=o.start-7;d<o.start;d++){ if(d<center-BEFORE||d>center-BEFORE+N-1) continue; const i=d-(center-BEFORE);
+      s+=`<rect x="${L+i*CW}" y="${TT}" width="${CW}" height="${B-TT}" fill="url(#hatch)"/>`; }
+    const p0=Math.max(o.start-7,center-BEFORE),p1=Math.min(o.start-1,center-BEFORE+N-1); if(p1>=p0) s+=`<text x="${(x(p0)+x(p1))/2}" y="${TT+66}" font-size="23" font-weight="bold" fill="#7a6a40" stroke="#f8f4ea" stroke-width="6" paint-order="stroke" text-anchor="middle">${WMT.prep}</text>`; }
+  for(const v of [.4,-.4]) s+=`<line x1="${L}" y1="${y(v)}" x2="${R}" y2="${y(v)}" stroke="${v>0?'#b8860b':'#5b3f99'}" stroke-width="2.5" stroke-dasharray="14 9"/><text x="${L+8}" y="${y(v)+(v>0?-8:26)}" font-size="22" font-weight="bold" fill="${v>0?'#9a7400':'#5b3f99'}">${v>0?70:30}%</text>`;
+  const pts=[];for(let d=center-BEFORE-.5;d<=center-BEFORE+N-.5+1e-9;d+=.125)pts.push(x(d).toFixed(1)+','+y(avg7(t0+d)).toFixed(1));
+  s+=`<polyline points="${pts.join(' ')}" fill="none" stroke="#f8f4ea" stroke-width="16" stroke-linejoin="round"/><polyline points="${pts.join(' ')}" fill="none" stroke="#1f2a4a" stroke-width="9" stroke-linejoin="round"/>`;
+  s+=`<circle cx="${x(sel)}" cy="${y(avg7(t0+sel))}" r="13" fill="#1f2a4a" stroke="#fff" stroke-width="4"/>`;
+  const lx=x(center-BEFORE+N-3), ly=y(avg7(t0+center-BEFORE+N-3)); s+=`<text x="${lx}" y="${ly-20}" font-size="26" font-weight="bold" fill="#1f2a4a" stroke="#f8f4ea" stroke-width="7" paint-order="stroke" text-anchor="middle">${WMT.avg}</text>`;
+  return `<defs><pattern id="hatch" width="16" height="16" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="16" stroke="#a8863a" stroke-width="5" opacity=".28"/></pattern></defs>`+s; }
+function ribbon(){ const W0=1080,H0=150,LL=14,RR=1066,D0=-7,D1=365,cw=(RR-LL)/(D1-D0+1),xd=d=>LL+(d-D0)*cw; let s=`<rect width="${W0}" height="${H0}" fill="#f8f4ea"/>`;
+  for(let d=D0;d<=D1;d++){const a=avg7(t0+d); s+=`<rect x="${xd(d)}" y="30" width="${cw+.6}" height="70" fill="${a>=0?'#e8d9a8':'#d9d0e6'}"/>`;}
+  YW.forEach((o,i)=>{const hi=o.type==='hi',x0=xd(Math.max(o.start,D0)),x1=xd(Math.min(o.end,D1)+1);
+    s+=`<rect x="${x0}" y="30" width="${x1-x0}" height="70" fill="${hi?(o.strong?'#c99700':'#e3b52a'):(o.strong?'#3f2a7a':'#6a50a8')}"/>`;
+    s+=`<text x="${(x0+x1)/2}" y="24" font-size="22" text-anchor="middle">${hi?'✨':'🌙'}</text>`;
+    if(i===WI) s+=`<rect x="${x0-4}" y="27" width="${x1-x0+8}" height="76" fill="none" stroke="#1f2a4a" stroke-width="4" rx="4"/>`;});
+  const t0d=new Date(today); for(let m=0;m<=12;m++){const md=Date.UTC(t0d.getUTCFullYear(),t0d.getUTCMonth()+m,1),d=Math.round((md-today)/DAY); if(d<D0||d>D1) continue;
+    s+=`<line x1="${xd(d)}" y1="30" x2="${xd(d)}" y2="108" stroke="#a8863a" stroke-width="1.5"/>`; const mm=new Date(md).getUTCMonth();
+    if(d+15<=D1) s+=`<text x="${xd(d+15)}" y="132" font-size="21" fill="#5a5040" text-anchor="middle">${X.mon[mm].slice(0,3)}</text>`;}
+  s+=`<line x1="${xd(0)}" y1="22" x2="${xd(0)}" y2="108" stroke="#c0392b" stroke-width="4"/><text x="${xd(0)-3}" y="148" font-size="19" font-weight="bold" fill="#c0392b" text-anchor="start">${X.today.toLowerCase()}</text>`;
+  s+=`<rect x="${LL}" y="30" width="${RR-LL}" height="70" fill="none" stroke="#a8863a" stroke-width="1.5"/>`;
+  el('yr').innerHTML=`<svg viewBox="0 0 ${W0} ${H0}" style="width:100%;height:auto;display:block;touch-action:manipulation">${s}</svg>`;
+  el('yr').firstChild.onclick=ev=>{const r=ev.currentTarget.getBoundingClientRect(),d=D0+((ev.clientX-r.left)/r.width*W0-LL)/cw; if(!YW.length) return;
+    let bi=0,bd=1e9; YW.forEach((o,i)=>{const dd=d<o.start?o.start-d:d>o.end+1?d-o.end-1:0; if(dd<bd){bd=dd;bi=i}}); goWave(bi);}; }
+function waveCard(){ const o=YW[WI]; if(!o){el('wv').innerHTML=WMT.none;return}
+  const fm=d=>{const t=new Date(today+d*DAY);return t.getUTCDate()+' '+X.mon[t.getUTCMonth()]}, hi=o.type==='hi';
+  let ext=hi?-1:101; for(let d=o.start;d<=o.end;d++){const v=apc(t0+d); ext=hi?Math.max(ext,v):Math.min(ext,v);}
+  const when=o.end<0?WMT.past:o.start<=0?WMT.now(o.end+1):WMT.in(o.start);
+  el('wv').innerHTML=`<h3>${hi?'✨':'🌙'} ${hz(hi?'wave_hi':'wave_lo',wName(o))}${o.strong?' ★':''}</h3><b>${fm(o.start)} – ${fm(o.end)}</b> · ${WMT.len(o.end-o.start+1)} · ${when}`
+   +`<div style="margin-top:6px">${WMT.ext(hi,Math.round(ext))}</div>`+(o.conv!=null&&o.conv<o.start?`<div style="margin-top:4px">${hz('porog',WMT.porog(hi,fm(o.conv)))}</div>`:''); }
+function goWave(i){ if(!YW.length) return; WI=Math.max(0,Math.min(YW.length-1,i)); const o=YW[WI];
+  center=Math.min(o.start+3,Math.max(o.end-10,Math.round((o.start-7+o.end)/2))); sel=o.start<=0&&o.end>=0?0:o.start; PIN=false;
+  el('td').textContent=WMT.of(WI+1,YW.length); el('pv').disabled=WI===0; el('nx').disabled=WI===YW.length-1; ribbon(); waveCard(); draw(); }
+if(WM){ YW=windows(t0,-7,365).filter(o=>o.end>=-7&&o.start<=365); WI=Math.max(0,YW.findIndex(o=>o.end>=0));
+  el('h').textContent=WMT.h; el('yr').style.display='block'; el('wv').style.display='block'; el('pv').textContent=WMT.prev; el('nx').textContent=WMT.next;
+  el('pv').onclick=()=>goWave(WI-1); el('nx').onclick=()=>goWave(WI+1); el('td').onclick=()=>goWave(Math.max(0,YW.findIndex(o=>o.end>=0)));
+  const _hint=()=>{el('hint').textContent=WMT.hint}; _hint(); }
+// switch between «Ваш день» and «Волны на год» inside the same window
+if(!GROUP){ const b=document.createElement('button'); b.textContent=WM?WMT.toDay:WMT.toWaves; b.onclick=()=>{const h=location.hash.slice(1).replace(/&?w=1/,'');location.replace(location.pathname+'#'+h+(WM?'':'&w=1'));location.reload()}; el('bb').prepend(b); }
 // ---- subscribers: offer the morning forecast at 8:00 of the phone's timezone (bot passes s=1 and its current tz in ut) ----
 { const ptz=(()=>{try{return Intl.DateTimeFormat().resolvedOptions().timeZone||''}catch(e){return ''}})(), ut=q.get('ut')||'Europe/Kyiv';
   const same=(a,b)=>{try{const t=new Date(),f=z=>t.toLocaleString('en-US',{timeZone:z});return f(a)===f(b)}catch(e){return a===b}};
@@ -299,5 +345,5 @@ el('pv').onclick=()=>{center-=7;sel-=7;draw()};el('nx').onclick=()=>{center+=7;s
     b.append(btn);b.style.display='block';}}
 try{Telegram.WebApp.ready();Telegram.WebApp.expand();Telegram.WebApp.setHeaderColor('#f8f4ea');Telegram.WebApp.setBackgroundColor('#f8f4ea')}catch(e){}
 if(!GROUP) tab=-1;   // personal chart: never the circle table view
-tabs(); draw();
+tabs(); if(WM) goWave(WI); else draw();
 </script></body></html>
