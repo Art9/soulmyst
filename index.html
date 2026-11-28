@@ -307,7 +307,8 @@ function wmOverlay(S){ let s=''; const o=YW[WI];
   s+=`<circle cx="${x(sel)}" cy="${y(avg7(t0+sel))}" r="13" fill="#1f2a4a" stroke="#fff" stroke-width="4"/>`;
   const lx=x(center-BEFORE+N-3), ly=y(avg7(t0+center-BEFORE+N-3)); s+=`<text x="${lx}" y="${ly-20}" font-size="26" font-weight="bold" fill="#1f2a4a" stroke="#f8f4ea" stroke-width="7" paint-order="stroke" text-anchor="middle">${WMT.avg}</text>`;
   return `<defs><pattern id="hatch" width="16" height="16" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="16" stroke="#a8863a" stroke-width="5" opacity=".28"/></pattern></defs>`+s; }
-function ribbon(){ const W0=1080,H0=150,LL=14,RR=1066,D0=-7,D1=365,cw=(RR-LL)/(D1-D0+1),xd=d=>LL+(d-D0)*cw; let s=`<rect width="${W0}" height="${H0}" fill="#f8f4ea"/>`;
+const RB={W0:1080,H0:150,LL:L,RR:R,D0:-7,D1:365}; RB.cw=(RB.RR-RB.LL)/(RB.D1-RB.D0+1);   // ribbon aligned with the chart's plot area
+function ribbon(){ const W0=1080,H0=150,LL=L,RR=R,D0=-7,D1=365,cw=(RR-LL)/(D1-D0+1),xd=d=>LL+(d-D0)*cw; let s=`<rect width="${W0}" height="${H0}" fill="#f8f4ea"/>`;
   for(let d=D0;d<=D1;d++){const a=avg7(t0+d); s+=`<rect x="${xd(d)}" y="30" width="${cw+.6}" height="70" fill="${a>=0?'#e8d9a8':'#d9d0e6'}"/>`;}
   YW.forEach((o,i)=>{const hi=o.type==='hi',x0=xd(Math.max(o.start,D0)),x1=xd(Math.min(o.end,D1)+1);
     s+=`<rect x="${x0}" y="30" width="${x1-x0}" height="70" fill="${hi?(o.strong?'#c99700':'#e3b52a'):(o.strong?'#3f2a7a':'#6a50a8')}"/>`;
@@ -318,9 +319,14 @@ function ribbon(){ const W0=1080,H0=150,LL=14,RR=1066,D0=-7,D1=365,cw=(RR-LL)/(D
     if(d+15<=D1) s+=`<text x="${xd(d+15)}" y="132" font-size="21" fill="#5a5040" text-anchor="middle">${X.mon[mm].slice(0,3)}</text>`;}
   s+=`<line x1="${xd(0)}" y1="22" x2="${xd(0)}" y2="108" stroke="#c0392b" stroke-width="4"/><text x="${xd(0)-3}" y="148" font-size="19" font-weight="bold" fill="#c0392b" text-anchor="start">${X.today.toLowerCase()}</text>`;
   s+=`<rect x="${LL}" y="30" width="${RR-LL}" height="70" fill="none" stroke="#a8863a" stroke-width="1.5"/>`;
-  el('yr').innerHTML=`<svg viewBox="0 0 ${W0} ${H0}" style="width:100%;height:auto;display:block;touch-action:manipulation">${s}</svg>`;
-  el('yr').firstChild.onclick=ev=>{const r=ev.currentTarget.getBoundingClientRect(),d=D0+((ev.clientX-r.left)/r.width*W0-LL)/cw; if(!YW.length) return;
-    let bi=0,bd=1e9; YW.forEach((o,i)=>{const dd=d<o.start?o.start-d:d>o.end+1?d-o.end-1:0; if(dd<bd){bd=dd;bi=i}}); goWave(bi);}; }
+  let sv=el('yr').firstChild;
+  if(!sv){ el('yr').innerHTML=`<svg viewBox="0 0 ${W0} ${H0}" style="width:100%;height:auto;display:block;touch-action:none"></svg>`; sv=el('yr').firstChild;
+    // slide a finger along the ribbon like a volume slider: the nearest wave opens as soon as the finger reaches it
+    let drag=false; const at=ev=>{const r=sv.getBoundingClientRect(),d=RB.D0+((ev.clientX-r.left)/r.width*RB.W0-RB.LL)/RB.cw; if(!YW.length) return;
+      let bi=0,bd=1e9; YW.forEach((o,i)=>{const dd=d<o.start?o.start-d:d>o.end+1?d-o.end-1:0; if(dd<bd){bd=dd;bi=i}}); if(bi!==WI){goWave(bi);try{Telegram.WebApp.HapticFeedback.selectionChanged()}catch(e){}}};
+    sv.addEventListener('pointerdown',e=>{drag=true;try{sv.setPointerCapture(e.pointerId)}catch(_){}at(e)}); sv.addEventListener('pointermove',e=>{if(drag)at(e)});
+    sv.addEventListener('pointerup',()=>drag=false); sv.addEventListener('pointercancel',()=>drag=false); }
+  sv.innerHTML=s; }
 function waveCard(){ const o=YW[WI]; if(!o){el('wv').innerHTML=WMT.none;return}
   const fm=d=>{const t=new Date(today+d*DAY);return t.getUTCDate()+' '+X.mon[t.getUTCMonth()]}, hi=o.type==='hi';
   let ext=hi?-1:101; for(let d=o.start;d<=o.end;d++){const v=apc(t0+d); ext=hi?Math.max(ext,v):Math.min(ext,v);}
