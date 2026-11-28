@@ -45,7 +45,7 @@ const VW={0:[1,.9,.4,.2,.05,.05,.05],S:[1,1,.6,.3,.2,.1,.05],V:[1,1,1,.7,.4,.25,
 function cwOf(r){if(r==null||r===''||isNaN(+r))r=5;r=+r;if(r<=0)return VW[0].slice();const vi=Math.ceil(r/3),st=(r-1)%3,c=VW[ORD[vi]],pv=VW[ORD[vi-1]],nx=vi<4?VW[ORD[vi+1]]:[1,1,1,1,1,1,1];
   return c.map((v,k)=>{const x=st===0?(v+pv[k])/2:st===2?(v+nx[k])/2:v;return Math.round(Math.max(.05,Math.min(1,x))*100)/100});}
 const MCOL=['#c62828','#1e88c8','#2e8b57','#8e3fc0','#e67e00','#1f3c9e','#c9a000','#d81b60','#00897b','#6d4c41','#5e35b1','#7cb342'];
-const T={ru:{h:'Ежедневная активность чакр',hg:'Биоритмы круга',hint:'Ведите пальцем по графику, чтобы выбрать день',today:'Сегодня',note:'Столбики — тонус дня. ⚠ — переходный день',all:'Общий',every:'Все ритмы',zP:'зона пика',act:w=>w>=.7?'активный центр':w>=.3?'раскрывающийся центр':'потенциальный центр',zT:'зона перехода',zR:'зона восстановления',okz:'оптимальная зона',sup:'⚡ День высокого напряжения — необычно много совпадений в чувствительных зонах',cnt1:n=>`Напряжённость дня: ${n}`,cntG:n=>`Напряжённость в круге: ${n}`,zn:{hi:'подход к пику',lo:'спуск в зону восстановления',mid:'переход'},cross:(n,m)=>`Пересечений линий разных людей в этот день: ${n}`+(m?` · из них одноимённых (одна чакра): ${m}`:''),spread:'Разница между участниками',ncrit:n=>'критических ритмов: '+n,
+const T={ru:{h:'Ежедневная активность чакр',hg:'Биоритмы круга',hint:'Ведите пальцем по графику, чтобы выбрать день',today:'Сегодня',note:'Столбики — общий фон дня. ⚠ — переходный день',all:'Общий',every:'Все ритмы',zP:'зона пика',act:w=>w>=.7?'активный центр':w>=.3?'раскрывающийся центр':'потенциальный центр',zT:'зона перехода',zR:'зона восстановления',okz:'оптимальная зона',sup:'⚡ День высокого напряжения — необычно много совпадений в чувствительных зонах',cnt1:n=>`Напряжённость дня: ${n}`,cntG:n=>`Напряжённость в круге: ${n}`,zn:{hi:'подход к пику',lo:'спуск в зону восстановления',mid:'переход'},cross:(n,m)=>`Пересечений линий разных людей в этот день: ${n}`+(m?` · из них одноимённых (одна чакра): ${m}`:''),spread:'Разница между участниками',ncrit:n=>'критических ритмов: '+n,
  n:[['Физический','Муладхара'],['Эмоциональный','Свадхистана'],['Интеллектуальный','Манипура'],['Сердечный','Анахата'],['Творческий','Вишуддха'],['Интуитивный','Аджна'],['Духовный','Сахасрара']],
  wd:['вс','пн','вт','ср','чт','пт','сб'],mon:['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'],fd:(d,m,y)=>d+' '+m+' '+y},
 en:{h:'Daily chakra activity',hg:'Circle biorhythms',hint:'Slide your finger across the chart to choose a day',today:'Today',note:'Bars — tone of the day. ⚠ — transition day',all:'Overall',every:'All rhythms',zP:'peak zone',act:w=>w>=.7?'active centre':w>=.3?'opening centre':'potential centre',zT:'transition zone',zR:'recovery zone',okz:'optimal zone',sup:'⚡ High-tension day — unusually many coincidences in sensitive zones',cnt1:n=>`Tension of the day: ${n}`,cntG:n=>`Tension in the circle: ${n}`,zn:{hi:'approaching the peak',lo:'descending into recovery',mid:'transition'},cross:(n,m)=>`Crossings between different people’s lines this day: ${n}`+(m?` · same chakra: ${m}`:''),spread:'Difference between members',ncrit:n=>'critical rhythms: '+n,
@@ -133,7 +133,7 @@ function labels(S){ // names drawn along curves where they are farthest from oth
         for(let xx=x0;xx<=x1;xx+=5){const line=cy+(xx-cx)*sl;dev=Math.max(dev,Math.abs(y(sr.f(dOf(xx)))-line));S.forEach((o,j)=>{if(j!==k)sep=Math.min(sep,Math.abs(y(o.f(dOf(xx)))-line))});}
         if(dev>FS*.45) continue; const score=sep-dev; if(!best||score>best.score) best={score,cx,cy,ang,txt,box:[x0,ymin,x1,ymax]};
       } if(best&&best.score>FS*.8) break; }
-    if(best&&best.score>FS*.5){placed.push(best.box);out+=`<text x="${best.cx}" y="${best.cy+FS*.36}" transform="rotate(${best.ang*180/Math.PI} ${best.cx} ${best.cy})" font-size="${FS}" font-weight="bold" fill="${sr.col}" stroke="#f8f4ea" stroke-width="7" paint-order="stroke" text-anchor="middle">${best.txt.replace(/</g,'&lt;')}</text>`;}
+    if(best&&best.score>FS*.5){placed.push(best.box);out+=`<text x="${best.cx}" y="${best.cy+FS*.36+(sr.dy||0)}" transform="rotate(${best.ang*180/Math.PI} ${best.cx} ${best.cy})" font-size="${FS}" font-weight="bold" fill="${sr.col}" stroke="#f8f4ea" stroke-width="7" paint-order="stroke" text-anchor="middle">${best.txt.replace(/</g,'&lt;')}</text>`;}
   }); return out; }
 function draw(){
   const S=series(); let s='<rect width="1080" height="1215" fill="#f8f4ea"/>';
@@ -175,7 +175,7 @@ function draw(){
     s+=z==='mid'?`<path d="M${X0-9} ${Y0-9}L${X0+9} ${Y0+9}M${X0+9} ${Y0-9}L${X0-9} ${Y0+9}" stroke="${sr.col}" stroke-width="5" stroke-linecap="round"/>`
       :z==='hi'?`<path d="M${X0} ${Y0-13}L${X0+11} ${Y0+7}L${X0-11} ${Y0+7}Z" fill="${sr.col}" stroke="#fff" stroke-width="2"/>`:`<path d="M${X0} ${Y0+13}L${X0+11} ${Y0-7}L${X0-11} ${Y0-7}Z" fill="${sr.col}" stroke="#fff" stroke-width="2"/>`;}});
   if(WM) s+=wmOverlay(S);
-  if(tab!==-2) s+=labels(WM?[...S,{noLabel:1,f:d=>avg7(t0+d)}]:S);   // in wave mode labels also keep clear of the bold average line
+  if(tab!==-2) s+=labels(WM?[{name:WMT.avg,col:'#1f2a4a',dy:-27,f:d=>avg7(t0+d)},...S]:S);   // wave mode: «общий фон» is labelled along its own line first   // in wave mode labels also keep clear of the bold average line
   S.forEach(sr=>{s+=`<circle cx="${x(sel)}" cy="${y(sr.f(sel))}" r="10" fill="${sr.col}" stroke="#fff" stroke-width="3"/>`;});
   s+=`<rect x="${L}" y="${TT}" width="${R-L}" height="${B-TT+80}" fill="none" stroke="#a8863a" stroke-width="1.5" rx="4"/>`;
   el('c').innerHTML=s;
@@ -314,7 +314,6 @@ function wmOverlay(S){ let s=''; const o=YW[WI];
   const pts=[];for(let d=center-BEFORE-.5;d<=center-BEFORE+N-.5+1e-9;d+=.125)pts.push(x(d).toFixed(1)+','+y(avg7(t0+d)).toFixed(1));
   s+=`<polyline points="${pts.join(' ')}" fill="none" stroke="#f8f4ea" stroke-width="16" stroke-linejoin="round"/><polyline points="${pts.join(' ')}" fill="none" stroke="#1f2a4a" stroke-width="9" stroke-linejoin="round"/>`;
   s+=`<circle cx="${x(sel)}" cy="${y(avg7(t0+sel))}" r="13" fill="#1f2a4a" stroke="#fff" stroke-width="4"/>`;
-  const lx=x(center-BEFORE+N-3), ly=y(avg7(t0+center-BEFORE+N-3)); s+=`<text x="${lx}" y="${ly-20}" font-size="26" font-weight="bold" fill="#1f2a4a" stroke="#f8f4ea" stroke-width="7" paint-order="stroke" text-anchor="middle">${WMT.avg}</text>`;
   return `<defs><pattern id="hatch" width="16" height="16" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="16" stroke="#a8863a" stroke-width="5" opacity=".28"/></pattern></defs>`+s; }
 const RB={W0:1080,H0:150,LL:L,RR:R,D0:-7,D1:365}; RB.cw=(RB.RR-RB.LL)/(RB.D1-RB.D0+1);   // ribbon aligned with the chart's plot area
 function ribbon(){ const W0=1080,H0=150,LL=L,RR=R,D0=-7,D1=365,cw=(RR-LL)/(D1-D0+1),xd=d=>LL+(d-D0)*cw; let s=`<rect width="${W0}" height="${H0}" fill="#f8f4ea"/>`;
@@ -346,7 +345,7 @@ function goWave(i){ if(!YW.length) return; WI=Math.max(0,Math.min(YW.length-1,i)
   center=Math.min(o.start+3,Math.max(o.end-10,Math.round((o.start-7+o.end)/2))); sel=o.start<=0&&o.end>=0?0:o.start; PIN=false;
   el('td').textContent=WMT.of(WI+1,YW.length); el('pv').disabled=WI===0; el('nx').disabled=WI===YW.length-1; ribbon(); waveCard(); draw(); }
 if(WM){ YW=windows(t0,-7,365).filter(o=>o.end>=-7&&o.start<=365); WI=Math.max(0,YW.findIndex(o=>o.end>=0));
-  el('h').textContent=WMT.h; el('yr').style.display='block'; el('wv').style.display='block'; el('pv').textContent=WMT.prev; el('nx').textContent=WMT.next;
+  el('h').textContent=WMT.h; el('note').textContent='Столбики и тёмная линия — общий фон дня. ⚠ — переходный день'; el('yr').style.display='block'; el('wv').style.display='block'; el('pv').textContent=WMT.prev; el('nx').textContent=WMT.next;
   el('pv').onclick=()=>goWave(WI-1); el('nx').onclick=()=>goWave(WI+1); el('td').onclick=()=>goWave(Math.max(0,YW.findIndex(o=>o.end>=0)));
   const _hint=()=>{el('hint').textContent=WMT.hint}; _hint(); }
 // switch between «Ваш день» and «Волны на год» inside the same window
