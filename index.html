@@ -252,11 +252,20 @@ function lunarHtml(dd){ if(!AS) return '';
   return h; }
 const rSt=(t,p)=>{const v=val(t,p),pc=(v+1)*50,c=crit(t,p);return {pc,up:val(t+1,p)>v,crit:c,key:c?'crit':pc>=75?'high':pc<=25?'low':val(t+1,p)>v?'up':'down'}};
 const DVL=typeof DV!=='undefined'?DV[LG]:null, vpick=(base,extra,n)=>{const a=extra?[base,...extra]:[base];return a[((n%a.length)+a.length)%a.length]};   // neighbouring days never repeat a phrase
-const rText=(k,dd)=>{const key=rSt(t0+dd,P[k]).key;return `<i>${hz('r'+k,X.n[k][1])}.</i> ${vpick(DL.T[k][key],DVL&&DVL.T[k][key],Math.floor(t0+dd)+k)}`};
+// day-specific fact for each rhythm (days to/since peak, trough) — makes every day's line unique (ru only for now)
+const dW=n=>{const a=n%10,b=n%100;return n+' '+(a===1&&b!==11?'день':a>=2&&a<=4&&(b<12||b>14)?'дня':'дней')};
+function rFact(t,p,key){ if(LG!=='ru') return ''; const f=((t%p)+p)%p/p, to=x=>((x-f+1)%1)*p, since=x=>((f-x+1)%1)*p;
+  const tp=to(.25),sp=since(.25),tt=to(.75),st=since(.75);
+  if(key==='high') return Math.min(tp,sp)<.5?'Сегодня пик цикла.':f<.25?`До пика ${dW(Math.round(tp))}.`:`Пик пройден ${dW(Math.round(sp))} назад.`;
+  if(key==='low') return Math.min(tt,st)<.5?'Сегодня нижняя точка цикла.':f<.75?`До нижней точки ${dW(Math.round(tt))}.`:`Нижняя точка пройдена ${dW(Math.round(st))} назад.`;
+  if(key==='up'||(key==='crit'&&(f<.25||f>.75))) return `До пика ${dW(Math.round(tp))}.`;
+  return `До нижней точки ${dW(Math.round(tt))}.`; }
+const rText=(k,dd)=>{const key=rSt(t0+dd,P[k]).key,fc=rFact(t0+dd,P[k],key);return `<i>${hz('r'+k,X.n[k][1])}.</i> ${fc?'<b>'+fc+'</b> ':''}${vpick(DL.T[k][key],DVL&&DVL.T[k][key],Math.floor((((t0+dd)%P[k])+P[k])%P[k])+2*Math.floor((t0+dd)/P[k]))}`};
 function bioHtml(dd){ const st=P.map(p=>rSt(t0+dd,p)), avg=P.reduce((a,p)=>a+val(t0+dd,p),0)/P.length*100;
   const strip=s=>s.replace(/<\/?b>/g,m=>m);
   const n=Math.floor(t0+dd), ti=(i=>i<0?4:i)(DL.TONE.findIndex(([th])=>avg>=th));
   let h=`<h3>${LX.h2}</h3>`+vpick(DL.TONE[ti][1],DVL&&DVL.TONE[ti],n);
+  if(LG==='ru'){const a1=Math.round((avg+100)/2),up=avg7(t0+dd+1)>avg7(t0+dd);h+=` Общий фон сегодня ${a1}% и ${up?'растёт':'снижается'}.`;}
   const ord=st.map((s,i)=>i).sort((a,b)=>st[b].pc-st[a].pc), strong=ord.filter(i=>st[i].pc>=60&&!st[i].crit).slice(0,2), weak=ord.slice().reverse().filter(i=>st[i].pc<=40||st[i].crit).slice(0,2);
   if(strong.length) h+='<div style="margin-top:6px">'+DL.lean+strong.map(i=>DL.leanItem(X.n[i][0],vpick(DL.T[i].good,DVL&&DVL.T[i].good,n+i))).join('; ')+'.</div>';
   if(weak.length) h+='<div style="margin-top:6px">'+DL.avoid+weak.map(i=>DL.avoidItem(vpick(DL.T[i].care,DVL&&DVL.T[i].care,n+i),X.n[i][0],st[i].crit)).join('; ')+'.</div>';
