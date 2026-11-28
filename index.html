@@ -37,6 +37,7 @@ svg{width:100%;height:auto;display:block;touch-action:none}
 <div class="card" id="lun"></div><div class="card" id="bio"></div><div id="leg"></div><div class="sum" id="sum"></div><div class="note" id="note"></div><div class="nav" id="bb"></div>
 </div>
 <script>
+try{history.scrollRestoration='manual'}catch(e){} window.scrollTo(0,0);
 const P=[23.6884,28.426125,33.163812,37.901499,42.6392,47.3769,52.1146];
 const COL=['#c62828','#e67e00','#c9a000','#2e8b57','#1e88c8','#1f3c9e','#8e3fc0'];
 // ---- chakra activity by rank (same as chakraw.mjs) ----
@@ -332,7 +333,7 @@ if(WM){ YW=windows(t0,-7,365).filter(o=>o.end>=-7&&o.start<=365); WI=Math.max(0,
   el('pv').onclick=()=>goWave(WI-1); el('nx').onclick=()=>goWave(WI+1); el('td').onclick=()=>goWave(Math.max(0,YW.findIndex(o=>o.end>=0)));
   const _hint=()=>{el('hint').textContent=WMT.hint}; _hint(); }
 // switch between «Ваш день» and «Волны на год» inside the same window
-if(!GROUP){ const b=document.createElement('button'); b.textContent=WM?WMT.toDay:WMT.toWaves; b.onclick=()=>{const h=location.hash.slice(1).replace(/&?w=1/,'');location.replace(location.pathname+'#'+h+(WM?'':'&w=1'));location.reload()}; el('bb').prepend(b); }
+if(!GROUP){ const b=document.createElement('button'); b.textContent=WM?WMT.toDay:WMT.toWaves; b.onclick=()=>{window.scrollTo(0,0);const h=location.hash.slice(1).replace(/&?w=1/,'');location.replace(location.pathname+'#'+h+(WM?'':'&w=1'));location.reload()}; el('bb').prepend(b); }
 // ---- subscribers: offer the morning forecast at 8:00 of the phone's timezone (bot passes s=1 and its current tz in ut) ----
 { const ptz=(()=>{try{return Intl.DateTimeFormat().resolvedOptions().timeZone||''}catch(e){return ''}})(), ut=q.get('ut')||'Europe/Kyiv';
   const same=(a,b)=>{try{const t=new Date(),f=z=>t.toLocaleString('en-US',{timeZone:z});return f(a)===f(b)}catch(e){return a===b}};
@@ -345,5 +346,5 @@ if(!GROUP){ const b=document.createElement('button'); b.textContent=WM?WMT.toDay
     b.append(btn);b.style.display='block';}}
 try{Telegram.WebApp.ready();Telegram.WebApp.expand();Telegram.WebApp.setHeaderColor('#f8f4ea');Telegram.WebApp.setBackgroundColor('#f8f4ea')}catch(e){}
 if(!GROUP) tab=-1;   // personal chart: never the circle table view
-tabs(); if(WM) goWave(WI); else draw();
+tabs(); if(WM) goWave(WI); else draw(); window.scrollTo(0,0); window.addEventListener('load',()=>window.scrollTo(0,0));
 </script></body></html>
